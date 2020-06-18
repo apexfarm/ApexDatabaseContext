@@ -1,8 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2020, Jianfeng Jin
- * https://github.com/apexfarm/ApexDatabaseContext
+ * Copyright (c) 2020, https://github.com/apexfarm
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -37,6 +36,8 @@ public with sharing class DatabaseContext implements IDatabaseContext {
     static Map<Schema.SObjectType, List<String>> relationshipNameCache { get; set; }
 
     List<ObjectDescriptor> objectDescriptors { get; set; }
+    List<IDatabaseContext> childContexts { get; set; }
+    IDatabaseContext parentContext { get; set; }
 
     static {
         relationshipFieldCache = new Map<Schema.SObjectType, List<Schema.SObjectField>>();
@@ -45,6 +46,7 @@ public with sharing class DatabaseContext implements IDatabaseContext {
 
     {
         objectDescriptors = new List<ObjectDescriptor>();
+        childContexts = new List<IDatabaseContext>();
     }
 
     @TestVisible
