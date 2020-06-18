@@ -2,11 +2,11 @@
 
 ![](https://img.shields.io/badge/version-1.0-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)
 
-This is an easy to use *Unit of Work* library, because:
+This is an easy to use *Unit of Work* pattern implementation, it has the following features:
 
-1. No need to specify any sObject dependency order. DMLs are executed in the order they were added.
-2. Automatically populate parent Ids. For example, just assign an account SObject to `Contact.Account` field. When that account is saved, its ID will be automatically assigned to `Contact.AccountId`.
-3. APIs are similar to the ones used with `Database` class, therefore less learning curve. 
+1. DMLs are executed in the order they were added, so no need to maintain sObject relationship dependency. 
+2. Automatically resolve relationships to populate parent Ids.
+3. Similar APIs to the ones used with `Database` class. 
 
 ### Installation
 
@@ -14,10 +14,6 @@ This is an easy to use *Unit of Work* library, because:
 | --------------------- | ------------------------------------------------------------ | ------- |
 | Production, Developer | <a target="_blank" href="https://login.salesforce.com/packaging/installPackage.apexp?p0=04t2v000007X3VDAA0"><img src="docs/images/deploy-button.png"></a> | ver 1.0 |
 | Sandbox               | <a target="_blank" href="https://test.salesforce.com/packaging/installPackage.apexp?p0=04t2v000007X3VDAA0"><img src="docs/images/deploy-button.png"></a> | ver 1.0 |
-### Performance
-
-The performance of 8k record insertion is already close to the 10k CPU limit, this is a known issue with Salesforce. However it will be fixed in [Summer `20 release](https://success.salesforce.com/issues_view?id=a1p3A000000AT8oQAG).
-
 ## Usage
 
 ```java
@@ -51,7 +47,7 @@ public without sharing class AccountService {
 }
 ```
 
-**Note**: The account is assigned to `Contact.Account` relationship field, and we don't need to set `Contact.AccountId`.  Because it can be automatically assigned with new account id, once accounts are inserted.
+**Note**: The unsaved account is assigned to `Contact.Account` relationship field.  The `Contact.AccountId` will be automatically populated with new account id, once accounts are saved.
 
 ```java
 public without sharing class ContactService {
