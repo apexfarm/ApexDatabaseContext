@@ -8,16 +8,16 @@ This is an easy to use *Unit of Work* library, because:
 2. Automatically populate parent Ids. For example, just assign an account SObject to `Contact.Account` field. When that account is saved, its ID will be automatically assigned to `Contact.AccountId`.
 3. APIs are similar to the ones used with `Database` class, therefore less learning curve. 
 
-### Performance
-
-The performance of 8k record insertion is already close to the 10k CPU limit, this is a known issue with Salesforce. However it will be fixed in [Summer `20 release](https://success.salesforce.com/issues_view?id=a1p3A000000AT8oQAG).
-
 ### Installation
 
 | Environment           | Install Link                                                 | Version |
 | --------------------- | ------------------------------------------------------------ | ------- |
 | Production, Developer | <a target="_blank" href="https://login.salesforce.com/packaging/installPackage.apexp?p0=04t2v000007X3VDAA0"><img src="docs/images/deploy-button.png"></a> | ver 1.0 |
 | Sandbox               | <a target="_blank" href="https://test.salesforce.com/packaging/installPackage.apexp?p0=04t2v000007X3VDAA0"><img src="docs/images/deploy-button.png"></a> | ver 1.0 |
+### Performance
+
+The performance of 8k record insertion is already close to the 10k CPU limit, this is a known issue with Salesforce. However it will be fixed in [Summer `20 release](https://success.salesforce.com/issues_view?id=a1p3A000000AT8oQAG).
+
 ## Usage
 
 ```java
@@ -51,6 +51,8 @@ public without sharing class AccountService {
 }
 ```
 
+**Note**: The account is assigned to `Contact.Account` relationship field, and we don't need to set `Contact.AccountId`.  Because it can be automatically assigned with new account id, once accounts are inserted.
+
 ```java
 public without sharing class ContactService {
     IDatabaseContext dbcontext { get; set; }
@@ -64,8 +66,7 @@ public without sharing class ContactService {
         for (Account account : accounts) {
             contacts.add(new Contact(
                 LastName = 'Last Name ' + i,
-                Account = account // dbcontext can automatically assign new account id to 
-                                  // the AccountId of the associated account.
+                Account = account
             ));
         }
         dbcontext.insertObjects(contacts);
@@ -97,7 +98,7 @@ Please check Salesforce [Database Class](https://developer.salesforce.com/docs/a
 
 ### IDatabaseCommitResult
 
-Methods to get all results of a particular operation against an SObjectType. **Note**: results will only be available for dml operations with `allOrNone = true`.
+Use the following methods to get all results of a particular operation against an SObjectType. **Note**: Results will only be available for dml operations with `allOrNone` equals to `true`.
 
 
 | Methods                                                      |
@@ -109,6 +110,7 @@ Methods to get all results of a particular operation against an SObjectType. **N
 | List<Database.UndeleteResult> getResultsForUndelete(Schema.SObjectType objectType) |
 | List<Database.EmptyRecycleBinResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) |
 
+Use the following methods to get only the error results of a particular operation against an SObjectType
 | Methods                                                      |
 | ------------------------------------------------------------ |
 | List<Database.SaveResult> getErrorsForInsert(Schema.SObjectType objectType) |
