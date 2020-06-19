@@ -12,7 +12,7 @@ This is an easy to use *Unit of Work* pattern implementation, it has the followi
 
 ```java
 public without sharing class AccountController {
-    IDBResult dbcontext = new DBResult();
+    IDBContext dbcontext = new DBContext();
 
     public void doPost() {
         List<Account> accounts = new AccountService(dbcontext).createAccounts();
@@ -24,9 +24,9 @@ public without sharing class AccountController {
 
 ```java
 public without sharing class AccountService {
-    IDBResult dbcontext { get; set; }
+    IDBContext dbcontext { get; set; }
 
-    public AccountService(IDBResult dbcontext) {
+    public AccountService(IDBContext dbcontext) {
         this.dbcontext = dbcontext;
     }
 
@@ -45,9 +45,9 @@ public without sharing class AccountService {
 
 ```java
 public without sharing class ContactService {
-    IDBResult dbcontext { get; set; }
+    IDBContext dbcontext { get; set; }
 
-    public ContactService(IDBResult dbcontext) {
+    public ContactService(IDBContext dbcontext) {
         this.dbcontext = dbcontext;
     }
 
