@@ -30,14 +30,12 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public with sharing class DatabaseContext implements IDatabaseContext {
+public with sharing class DBContext implements IDBContext {
 
     static Map<Schema.SObjectType, List<Schema.SObjectField>> relationshipFieldCache { get; set; }
     static Map<Schema.SObjectType, List<String>> relationshipNameCache { get; set; }
 
     List<ObjectDescriptor> objectDescriptors { get; set; }
-    List<IDatabaseContext> childContexts { get; set; }
-    IDatabaseContext parentContext { get; set; }
 
     static {
         relationshipFieldCache = new Map<Schema.SObjectType, List<Schema.SObjectField>>();
@@ -46,7 +44,6 @@ public with sharing class DatabaseContext implements IDatabaseContext {
 
     {
         objectDescriptors = new List<ObjectDescriptor>();
-        childContexts = new List<IDatabaseContext>();
     }
 
     @TestVisible
@@ -111,9 +108,9 @@ public with sharing class DatabaseContext implements IDatabaseContext {
         objectDescriptors.add(new ObjectDescriptor(OperationType.DO_EMPTY_RECYCLE_BIN, objects, true));
     }
 
-    public IDatabaseCommitResult commitObjects() {
+    public IDBResult commitObjects() {
         System.Savepoint sp = Database.setSavePoint();
-        CommitResult result = new CommitResult();
+        DBResult result = new DBResult();
 		try {
             for (ObjectDescriptor descriptor : objectDescriptors) {
                 if (descriptor.objects != null) {
@@ -123,7 +120,10 @@ public with sharing class DatabaseContext implements IDatabaseContext {
                             if (descriptor.allOrNone) {
                                 insert descriptor.objects;
                             } else {
-                                result.getResultsForInsert(descriptor.objectType).addAll(
+                                if (!result.insertResults.containsKey(descriptor.objectType)) {
+                                    result.insertResults.put(descriptor.objectType, new List<Database.SaveResult>());
+                                }
+                                result.insertResults.get(descriptor.objectType).addAll(
                                     Database.insert(descriptor.objects, descriptor.allOrNone));
                             }
                         }
@@ -131,7 +131,10 @@ public with sharing class DatabaseContext implements IDatabaseContext {
                             if (descriptor.allOrNone) {
                                 upsert descriptor.objects;
                             } else {
-                                result.getResultsForUpsert(descriptor.objectType).addAll(
+                                if (!result.upsertResults.containsKey(descriptor.objectType)) {
+                                    result.upsertResults.put(descriptor.objectType, new List<Database.UpsertResult>());
+                                }
+                                result.upsertResults.get(descriptor.objectType).addAll(
                                     Database.upsert(descriptor.objects, descriptor.allOrNone));
                             }
                         }
@@ -139,7 +142,10 @@ public with sharing class DatabaseContext implements IDatabaseContext {
                             if (descriptor.allOrNone) {
                                 update descriptor.objects;
                             } else {
-                                result.getResultsForUpdate(descriptor.objectType).addAll(
+                                if (!result.updateResults.containsKey(descriptor.objectType)) {
+                                    result.updateResults.put(descriptor.objectType, new List<Database.SaveResult>());
+                                }
+                                result.updateResults.get(descriptor.objectType).addAll(
                                     Database.update(descriptor.objects, descriptor.allOrNone));
                             }
                         }
@@ -147,7 +153,10 @@ public with sharing class DatabaseContext implements IDatabaseContext {
                             if (descriptor.allOrNone) {
                                 delete descriptor.objects;
                             } else {
-                                result.getResultsForDelete(descriptor.objectType).addAll(
+                                if (!result.deleteResults.containsKey(descriptor.objectType)) {
+                                    result.deleteResults.put(descriptor.objectType, new List<Database.DeleteResult>());
+                                }
+                                result.deleteResults.get(descriptor.objectType).addAll(
                                     Database.delete(descriptor.objects, descriptor.allOrNone));
                             }
                         }
@@ -155,13 +164,19 @@ public with sharing class DatabaseContext implements IDatabaseContext {
                             if (descriptor.allOrNone) {
                                 undelete descriptor.objects;
                             } else {
-                                result.getResultsForUndelete(descriptor.objectType).addAll(
+                                if (!result.undeleteResults.containsKey(descriptor.objectType)) {
+                                    result.undeleteResults.put(descriptor.objectType, new List<Database.UndeleteResult>());
+                                }
+                                result.undeleteResults.get(descriptor.objectType).addAll(
                                     Database.undelete(descriptor.objects, descriptor.allOrNone));
                             }
                         }
                         when DO_EMPTY_RECYCLE_BIN {
                             if (!descriptor.objects.isEmpty()) {
-                                result.getResultsForEmptyRecycleBin(descriptor.objectType).addAll(
+                                if (!result.emptyRecycleBinResults.containsKey(descriptor.objectType)) {
+                                    result.emptyRecycleBinResults.put(descriptor.objectType, new List<Database.EmptyRecycleBinResult>());
+                                }
+                                result.emptyRecycleBinResults.get(descriptor.objectType).addAll(
                                     Database.emptyRecycleBin(descriptor.objects));
                             }
                         }
@@ -219,126 +234,6 @@ public with sharing class DatabaseContext implements IDatabaseContext {
                     }
                 }
             }
-        }
-    }
-
-    public class CommitResult implements IDatabaseCommitResult {
-        Map<Schema.SObjectType, List<Database.SaveResult>> insertResults { get; set; }
-        Map<Schema.SObjectType, List<Database.SaveResult>> updateResults { get; set; }
-        Map<Schema.SObjectType, List<Database.UpsertResult>> upsertResults { get; set; }
-        Map<Schema.SObjectType, List<Database.DeleteResult>> deleteResults { get; set; }
-        Map<Schema.SObjectType, List<Database.UndeleteResult>> undeleteResults { get; set; }
-        Map<Schema.SObjectType, List<Database.EmptyRecycleBinResult>> emptyRecycleBinResults { get; set; }
-
-        {
-            insertResults = new Map<Schema.SObjectType, List<Database.SaveResult>>();
-            updateResults = new Map<Schema.SObjectType, List<Database.SaveResult>>();
-            upsertResults = new Map<Schema.SObjectType, List<Database.UpsertResult>>();
-            deleteResults = new Map<Schema.SObjectType, List<Database.DeleteResult>>();
-            undeleteResults = new Map<Schema.SObjectType, List<Database.UndeleteResult>>();
-            emptyRecycleBinResults = new Map<Schema.SObjectType, List<Database.EmptyRecycleBinResult>>();
-        }
-
-        public List<Database.SaveResult> getErrorsForInsert(Schema.SObjectType objectType) {
-            List<Database.SaveResult> errorResults = new List<Database.SaveResult>();
-            for (Database.SaveResult result : this.getResultsForInsert(objectType)) {
-                if(!result.isSuccess()) {
-                    errorResults.add(result);
-                }
-            }
-            return errorResults;
-        }
-
-        public List<Database.SaveResult> getErrorsForUpdate(Schema.SObjectType objectType) {
-            List<Database.SaveResult> errorResults = new List<Database.SaveResult>();
-            for (Database.SaveResult result : this.getResultsForUpdate(objectType)) {
-                if(!result.isSuccess()) {
-                    errorResults.add(result);
-                }
-            }
-            return errorResults;
-        }
-
-        public List<Database.UpsertResult> getErrorsForUpsert(Schema.SObjectType objectType) {
-            List<Database.UpsertResult> errorResults = new List<Database.UpsertResult>();
-            for (Database.UpsertResult result : this.getResultsForUpsert(objectType)) {
-                if(!result.isSuccess()) {
-                    errorResults.add(result);
-                }
-            }
-            return errorResults;
-        }
-
-        public List<Database.DeleteResult> getErrorsForDelete(Schema.SObjectType objectType) {
-            List<Database.DeleteResult> errorResults = new List<Database.DeleteResult>();
-            for (Database.DeleteResult result : this.getResultsForDelete(objectType)) {
-                if(!result.isSuccess()) {
-                    errorResults.add(result);
-                }
-            }
-            return errorResults;
-        }
-
-        public List<Database.UndeleteResult> getErrorsForUndelete(Schema.SObjectType objectType) {
-            List<Database.UndeleteResult> errorResults = new List<Database.UndeleteResult>();
-            for (Database.UndeleteResult result : this.getResultsForUndelete(objectType)) {
-                if(!result.isSuccess()) {
-                    errorResults.add(result);
-                }
-            }
-            return errorResults;
-        }
-
-        public List<Database.EmptyRecycleBinResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType) {
-            List<Database.EmptyRecycleBinResult> errorResults = new List<Database.EmptyRecycleBinResult>();
-            for (Database.EmptyRecycleBinResult result : this.getResultsForEmptyRecycleBin(objectType)) {
-                if(!result.isSuccess()) {
-                    errorResults.add(result);
-                }
-            }
-            return errorResults;
-        }
-
-        public List<Database.SaveResult> getResultsForInsert(Schema.SObjectType objectType) {
-            if (!this.insertResults.containsKey(objectType)) {
-                this.insertResults.put(objectType, new List<Database.SaveResult>());
-            }
-            return this.insertResults.get(objectType);
-        }
-
-        public List<Database.SaveResult> getResultsForUpdate(Schema.SObjectType objectType) {
-            if (!this.updateResults.containsKey(objectType)) {
-                this.updateResults.put(objectType, new List<Database.SaveResult>());
-            }
-            return this.updateResults.get(objectType);
-        }
-
-        public List<Database.UpsertResult> getResultsForUpsert(Schema.SObjectType objectType) {
-            if (!this.upsertResults.containsKey(objectType)) {
-                this.upsertResults.put(objectType, new List<Database.UpsertResult>());
-            }
-            return this.upsertResults.get(objectType);
-        }
-
-        public List<Database.DeleteResult> getResultsForDelete(Schema.SObjectType objectType) {
-            if (!this.deleteResults.containsKey(objectType)) {
-                this.deleteResults.put(objectType, new List<Database.DeleteResult>());
-            }
-            return this.deleteResults.get(objectType);
-        }
-
-        public List<Database.UndeleteResult> getResultsForUndelete(Schema.SObjectType objectType) {
-            if (!this.undeleteResults.containsKey(objectType)) {
-                this.undeleteResults.put(objectType, new List<Database.UndeleteResult>());
-            }
-            return this.undeleteResults.get(objectType);
-        }
-
-        public List<Database.EmptyRecycleBinResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) {
-            if (!this.emptyRecycleBinResults.containsKey(objectType)) {
-                this.emptyRecycleBinResults.put(objectType, new List<Database.EmptyRecycleBinResult>());
-            }
-            return this.emptyRecycleBinResults.get(objectType);
         }
     }
 }

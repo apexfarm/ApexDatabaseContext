@@ -2,7 +2,7 @@
     "packageDirectories": [
         {
             "path": "apex-db-context",
-            "package": "ApexDatabaseContext",
+            "package": "ApexDBResult",
             "versionName": "ver 1.0",
             "versionNumber": "1.0.0.NEXT",
             "default": true
@@ -12,7 +12,7 @@
     "sfdcLoginUrl": "https://login.salesforce.com",
     "sourceApiVersion": "48.0",
     "packageAliases": {
-        "ApexDatabaseContext": "0Ho2v00000000GOCAY",
-        "ApexDatabaseContext@1.0.0-1": "04t2v000007X3VDAA0"
+        "ApexDBResult": "0Ho2v00000000GOCAY",
+        "ApexDBResult@1.0.0-1": "04t2v000007X3VDAA0"
     }
 }

@@ -30,18 +30,19 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public interface IDatabaseCommitResult {
-    List<Database.SaveResult> getErrorsForInsert(Schema.SObjectType objectType);
-    List<Database.SaveResult> getErrorsForUpdate(Schema.SObjectType objectType);
-    List<Database.UpsertResult> getErrorsForUpsert(Schema.SObjectType objectType);
-    List<Database.DeleteResult> getErrorsForDelete(Schema.SObjectType objectType);
-    List<Database.UndeleteResult> getErrorsForUndelete(Schema.SObjectType objectType);
-    List<Database.EmptyRecycleBinResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType);
+public interface IDBContext {
+    void insertObjects(List<SObject> objects);
+    void insertObjects(List<SObject> objects, Boolean allOrNone);
+    void upsertObjects(List<SObject> objects);
+    void upsertObjects(List<SObject> objects, Boolean allOrNone);
+    void updateObjects(List<SObject> objects);
+    void updateObjects(List<SObject> objects, Boolean allOrNone);
+    void deleteObjects(List<SObject> objects);
+    void deleteObjects(List<SObject> objects, Boolean allOrNone);
+    void undeleteObjects(List<SObject> objects);
+    void undeleteObjects(List<SObject> objects, Boolean allOrNone);
 
-    List<Database.SaveResult> getResultsForInsert(Schema.SObjectType objectType);
-    List<Database.SaveResult> getResultsForUpdate(Schema.SObjectType objectType);
-    List<Database.UpsertResult> getResultsForUpsert(Schema.SObjectType objectType);
-    List<Database.DeleteResult> getResultsForDelete(Schema.SObjectType objectType);
-    List<Database.UndeleteResult> getResultsForUndelete(Schema.SObjectType objectType);
-    List<Database.EmptyRecycleBinResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType);
+    void emptyRecycleBin(List<SObject> objects);
+
+    IDBResult commitObjects();
 }

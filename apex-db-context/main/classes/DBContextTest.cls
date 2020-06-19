@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2020, https://github.com/apexfarm/ApexDatabaseContext
+ * Copyright (c) 2020, https://github.com/apexfarm/ApexDBResult
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,11 +31,11 @@
  */
 
 @IsTest
-public with sharing class DatabaseContextTest {
+public with sharing class DBContextTest {
     @IsTest
     static void test_without_dml() {
-        IDatabaseContext dbcontext = new DatabaseContext();
-        IDatabaseCommitResult result = dbcontext.commitObjects();
+        IDBContext dbcontext = new DBContext();
+        IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(0, result.getResultsForInsert(Account.SObjectType).size());
         System.assertEquals(0, result.getResultsForUpdate(Account.SObjectType).size());
@@ -53,51 +53,8 @@ public with sharing class DatabaseContextTest {
     }
 
     @IsTest
-    static void test_empty_list() {
-        IDatabaseContext dbcontext = new DatabaseContext();
-        dbcontext.insertObjects(new List<Account> {});
-        dbcontext.upsertObjects(new List<Account> {});
-        dbcontext.updateObjects(new List<Account> {});
-        dbcontext.deleteObjects(new List<Account> {});
-        dbcontext.undeleteObjects(new List<Account> {});
-        dbcontext.emptyRecycleBin(new List<Account> {});
-        dbcontext.commitObjects();
-    }
-
-    @IsTest
-    static void test_empty_list_partial() {
-        IDatabaseContext dbcontext = new DatabaseContext();
-        dbcontext.insertObjects(new List<Account> {}, false);
-        dbcontext.upsertObjects(new List<Account> {}, false);
-        dbcontext.updateObjects(new List<Account> {}, false);
-        dbcontext.deleteObjects(new List<Account> {}, false);
-        dbcontext.undeleteObjects(new List<Account> {}, false);
-        dbcontext.emptyRecycleBin(new List<Account> {});
-        dbcontext.commitObjects();
-    }
-
-    @IsTest
-    static void test_empty_list_partial_errors() {
-        IDatabaseContext dbcontext = new DatabaseContext();
-        dbcontext.insertObjects(new List<Account> {}, false);
-        dbcontext.upsertObjects(new List<Account> {}, false);
-        dbcontext.updateObjects(new List<Account> {}, false);
-        dbcontext.deleteObjects(new List<Account> {}, false);
-        dbcontext.undeleteObjects(new List<Account> {}, false);
-        dbcontext.emptyRecycleBin(new List<Account> {});
-        IDatabaseCommitResult result = dbcontext.commitObjects();
-
-        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
-    }
-
-    @IsTest
-    static void test_null_list() {
-        IDatabaseContext dbcontext = new DatabaseContext();
+    static void test_AllOrNone_null_list() {
+        IDBContext dbcontext = new DBContext();
         dbcontext.insertObjects(null);
         dbcontext.upsertObjects(null);
         dbcontext.updateObjects(null);
@@ -108,8 +65,21 @@ public with sharing class DatabaseContextTest {
     }
 
     @IsTest
-    static void test_exception() {
-        IDatabaseContext dbcontext = new DatabaseContext();
+    static void test_AllOrNone_empty_list() {
+        IDBContext dbcontext = new DBContext();
+        dbcontext.insertObjects(new List<Account> {});
+        dbcontext.upsertObjects(new List<Account> {});
+        dbcontext.updateObjects(new List<Account> {});
+        dbcontext.deleteObjects(new List<Account> {});
+        dbcontext.undeleteObjects(new List<Account> {});
+        dbcontext.emptyRecycleBin(new List<Account> {});
+        dbcontext.commitObjects();
+    }
+
+
+    @IsTest
+    static void test_AllOrNone_exception() {
+        IDBContext dbcontext = new DBContext();
         dbcontext.insertObjects(new List<Account> { new Account() });
         Boolean hasException = false;
         try {
@@ -121,29 +91,52 @@ public with sharing class DatabaseContextTest {
     }
 
     @IsTest
-    static void test_one_object_list() {
-        IDatabaseContext dbcontext = new DatabaseContext();
-        dbcontext.insertObjects(new List<Account> { new Account() }, false);
-        dbcontext.upsertObjects(new List<Account> { new Account() }, false);
-        dbcontext.updateObjects(new List<Account> { new Account() }, false);
-        dbcontext.commitObjects();
+    static void test_partial_empty_list() {
+        IDBContext dbcontext = new DBContext();
+        dbcontext.insertObjects(new List<Account> {}, false);
+        dbcontext.upsertObjects(new List<Account> {}, false);
+        dbcontext.updateObjects(new List<Account> {}, false);
+        dbcontext.deleteObjects(new List<Account> {}, false);
+        dbcontext.undeleteObjects(new List<Account> {}, false);
+        dbcontext.emptyRecycleBin(new List<Account> {});
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
     }
 
     @IsTest
-    static void test_one_object_list_errors() {
-        IDatabaseContext dbcontext = new DatabaseContext();
+    static void test_partial_one_object_list() {
+        IDBContext dbcontext = new DBContext();
         dbcontext.insertObjects(new List<Account> { new Account() }, false);
         dbcontext.upsertObjects(new List<Account> { new Account() }, false);
         dbcontext.updateObjects(new List<Account> { new Account() }, false);
-        IDatabaseCommitResult result = dbcontext.commitObjects();
+        dbcontext.deleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
+        dbcontext.undeleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
+        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) });
+        IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
         System.assertEquals(1, result.getErrorsForUpdate(Account.SObjectType).size());
         System.assertEquals(1, result.getErrorsForUpsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForDelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForUndelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+
+        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForDelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUndelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
     }
 
     @IsTest
-    static void test_relationship() {
+    static void test_partial_relationship() {
         List<Account> accounts = new List<Account>();
         List<Contact> contacts = new List<Contact>();
         for (Integer i = 0; i < 10; ++i) {
@@ -157,7 +150,7 @@ public with sharing class DatabaseContextTest {
             }
         }
 
-        IDatabaseContext dbcontext = new DatabaseContext();
+        IDBContext dbcontext = new DBContext();
         dbcontext.insertObjects(contacts, false);
         dbcontext.commitObjects();
 
@@ -169,7 +162,7 @@ public with sharing class DatabaseContextTest {
     }
 
     @IsTest
-    static void test_relationship_2k() {
+    static void test_partial_relationship_2k() {
         Integer numberOfRecords = 2000;
         List<Account> accounts = new List<Account>();
         List<Contact> contacts = new List<Contact>();
@@ -182,7 +175,7 @@ public with sharing class DatabaseContextTest {
             ));
         }
 
-        IDatabaseContext dbcontext = new DatabaseContext();
+        IDBContext dbcontext = new DBContext();
         dbcontext.updateObjects(accounts, false);
         dbcontext.insertObjects(contacts, false);
         dbcontext.commitObjects();
@@ -194,7 +187,7 @@ public with sharing class DatabaseContextTest {
     }
 
     @IsTest
-    static void test_hierarchy() {
+    static void test_partial_hierarchy() {
         List<Case> parentCases = new List<Case>();
         List<Case> childCases = new List<Case>();
         for (Integer i = 0; i < 10; ++i) {
@@ -204,7 +197,7 @@ public with sharing class DatabaseContextTest {
             ));
         }
 
-        IDatabaseContext dbcontext = new DatabaseContext();
+        IDBContext dbcontext = new DBContext();
         dbcontext.insertObjects(childCases, false);
         dbcontext.commitObjects();
 
@@ -218,6 +211,11 @@ public with sharing class DatabaseContextTest {
         for (Integer i = 0; i < 10; ++i) {
             System.assertEquals(parentCases[i].Id, childCases[i].ParentId);
         }
+    }
+
+    @IsTest
+    static void test_no_assertions() {
+        new DMLResult(null, true, true);
     }
 
     static String getFakeId(Schema.SObjectType objectType, Integer index) {

@@ -1,7 +1,7 @@
 /**
  * BSD 3-Clause License
  *
- * Copyright (c) 2020, https://github.com/apexfarm
+ * Copyright (c) 2020, https://github.com/apexfarm/ApexDatabaseContext
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,19 +30,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public interface IDatabaseContext {
-    void insertObjects(List<SObject> objects);
-    void insertObjects(List<SObject> objects, Boolean allOrNone);
-    void upsertObjects(List<SObject> objects);
-    void upsertObjects(List<SObject> objects, Boolean allOrNone);
-    void updateObjects(List<SObject> objects);
-    void updateObjects(List<SObject> objects, Boolean allOrNone);
-    void deleteObjects(List<SObject> objects);
-    void deleteObjects(List<SObject> objects, Boolean allOrNone);
-    void undeleteObjects(List<SObject> objects);
-    void undeleteObjects(List<SObject> objects, Boolean allOrNone);
+public interface IDBResult {
+    List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType);
+    List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType);
+    List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType);
+    List<DMLResult> getErrorsForDelete(Schema.SObjectType objectType);
+    List<DMLResult> getErrorsForUndelete(Schema.SObjectType objectType);
+    List<DMLResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType);
 
-    void emptyRecycleBin(List<SObject> objects);
-
-    IDatabaseCommitResult commitObjects();
+    List<DMLResult> getResultsForInsert(Schema.SObjectType objectType);
+    List<DMLResult> getResultsForUpdate(Schema.SObjectType objectType);
+    List<DMLResult> getResultsForUpsert(Schema.SObjectType objectType);
+    List<DMLResult> getResultsForDelete(Schema.SObjectType objectType);
+    List<DMLResult> getResultsForUndelete(Schema.SObjectType objectType);
+    List<DMLResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType);
 }
