@@ -236,4 +236,166 @@ public with sharing class DBContext implements IDBContext {
             }
         }
     }
+
+    public class DBResult implements IDBResult {
+        public Map<Schema.SObjectType, List<Database.SaveResult>> insertResults { get; set; }
+        public Map<Schema.SObjectType, List<Database.SaveResult>> updateResults { get; set; }
+        public Map<Schema.SObjectType, List<Database.UpsertResult>> upsertResults { get; set; }
+        public Map<Schema.SObjectType, List<Database.DeleteResult>> deleteResults { get; set; }
+        public Map<Schema.SObjectType, List<Database.UndeleteResult>> undeleteResults { get; set; }
+        public Map<Schema.SObjectType, List<Database.EmptyRecycleBinResult>> emptyRecycleBinResults { get; set; }
+
+        {
+            insertResults = new Map<Schema.SObjectType, List<Database.SaveResult>>();
+            updateResults = new Map<Schema.SObjectType, List<Database.SaveResult>>();
+            upsertResults = new Map<Schema.SObjectType, List<Database.UpsertResult>>();
+            deleteResults = new Map<Schema.SObjectType, List<Database.DeleteResult>>();
+            undeleteResults = new Map<Schema.SObjectType, List<Database.UndeleteResult>>();
+            emptyRecycleBinResults = new Map<Schema.SObjectType, List<Database.EmptyRecycleBinResult>>();
+        }
+
+        public List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.insertResults.containsKey(objectType)) {
+                for (Database.SaveResult result : this.insertResults.get(objectType)) {
+                    if(!result.isSuccess()) {
+                        dmlResults.add(new DMLResult(result, true));
+                    }
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.updateResults.containsKey(objectType)) {
+                for (Database.SaveResult result : this.updateResults.get(objectType)) {
+                    if(!result.isSuccess()) {
+                        dmlResults.add(new DMLResult(result, true));
+                    }
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.upsertResults.containsKey(objectType)) {
+                for (Database.UpsertResult result : this.upsertResults.get(objectType)) {
+                    if(!result.isSuccess()) {
+                        dmlResults.add(new DMLResult(result));
+                    }
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getErrorsForDelete(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.deleteResults.containsKey(objectType)) {
+                for (Database.DeleteResult result : this.deleteResults.get(objectType)) {
+                    if(!result.isSuccess()) {
+                        dmlResults.add(new DMLResult(result));
+                    }
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getErrorsForUndelete(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.undeleteResults.containsKey(objectType)) {
+                for (Database.UndeleteResult result : this.undeleteResults.get(objectType)) {
+                    if(!result.isSuccess()) {
+                        dmlResults.add(new DMLResult(result));
+                    }
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.emptyRecycleBinResults.containsKey(objectType)) {
+                for (Database.EmptyRecycleBinResult result : this.emptyRecycleBinResults.get(objectType)) {
+                    if(!result.isSuccess()) {
+                        dmlResults.add(new DMLResult(result));
+                    }
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getResultsForInsert(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.insertResults.containsKey(objectType)) {
+                for (Database.SaveResult result : this.insertResults.get(objectType)) {
+                    dmlResults.add(new DMLResult(result, true));
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getResultsForUpdate(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.updateResults.containsKey(objectType)) {
+                for (Database.SaveResult result : this.updateResults.get(objectType)) {
+                    dmlResults.add(new DMLResult(result, false));
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getResultsForUpsert(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.upsertResults.containsKey(objectType)) {
+                for (Database.UpsertResult result : this.upsertResults.get(objectType)) {
+                    dmlResults.add(new DMLResult(result));
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getResultsForDelete(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.deleteResults.containsKey(objectType)) {
+                for (Database.DeleteResult result : this.deleteResults.get(objectType)) {
+                    dmlResults.add(new DMLResult(result));
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getResultsForUndelete(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.undeleteResults.containsKey(objectType)) {
+                for (Database.UndeleteResult result : this.undeleteResults.get(objectType)) {
+                    dmlResults.add(new DMLResult(result));
+                }
+            }
+            return dmlResults;
+        }
+
+        public List<DMLResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) {
+            List<DMLResult> dmlResults = new List<DMLResult>();
+
+            if (this.emptyRecycleBinResults.containsKey(objectType)) {
+                for (Database.EmptyRecycleBinResult result : this.emptyRecycleBinResults.get(objectType)) {
+                    dmlResults.add(new DMLResult(result));
+                }
+            }
+            return dmlResults;
+        }
+    }
 }

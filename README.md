@@ -17,7 +17,13 @@ public without sharing class AccountController {
     public void doPost() {
         List<Account> accounts = new AccountService(dbcontext).createAccounts();
         List<Contact> contacts = new ContactService(dbcontext).createContacts(accounts);
-        IDBResult result = dbcontext.commitObjects();
+        IDBResult dbResult = dbcontext.commitObjects();
+
+        for (DMLResult dmlResult : dbResult.getResultsForInsert(Account.SObjectType)) {
+            if (!dmlResult.isSuccess) {
+                System.debug(dmlResult.Id);
+            }
+        }
     }
 }
 ```
