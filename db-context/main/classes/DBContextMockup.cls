@@ -46,7 +46,7 @@ public class DBContextMockup extends DBContext {
                                 dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
                             for (SObject obj : dmlDescriptor.objects) {
                                 if (obj.Id == null) {
-                                    obj.Id = getFakeId(dmlDescriptor.objectType, 1);
+                                    obj.Id = getFakeId(dmlDescriptor.objectType);
                                     if (!dmlDescriptor.allOrNone) {
                                         dmlResults.add(new DMLResult(obj.Id, true, true));
                                     }
@@ -77,8 +77,22 @@ public class DBContextMockup extends DBContext {
         return result;
     }
 
-    static String getFakeId(Schema.SObjectType objectType, Integer index) {
-        return objectType.getDescribe().getKeyPrefix() + String.valueOf(index).leftPad(12, '0');
+    static Map<Schema.SObjectType, Integer> objectIdIndexes { get; set; }
+
+    static {
+        objectIdIndexes = new Map<Schema.SObjectType, Integer>();
+    }
+
+    static String getFakeId(Schema.SObjectType objectType) {
+        if (!objectIdIndexes.containsKey(objectType)) {
+            objectIdIndexes.put(objectType, 0);
+        }
+        Integer index = objectIdIndexes.get(objectType) + 1;
+
+        // start from a large Id to avoid confliction during unit test.
+        Id objId = objectType.getDescribe().getKeyPrefix() + 'Z' + String.valueOf(index).leftPad(11, '0');
+        objectIdIndexes.put(objectType, index);
+        return objId;
      }
 
     public class DBResultMockup implements IDBResult {
@@ -242,31 +256,5 @@ public class DBContextMockup extends DBContext {
         public List<DMLResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) {
             return this.emptyRecycleBinResults.get(objectType);
         }
-    }
-
-    @IsTest
-    static void testMockup() {
-        IDBContext dbcontext = new DBContextMockup();
-        dbcontext.insertObjects(new List<Account> { new Account() }, false);
-        dbcontext.upsertObjects(new List<Account> { new Account() }, false);
-        dbcontext.updateObjects(new List<Account> { new Account() }, false);
-        dbcontext.deleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
-        dbcontext.undeleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
-        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
-        IDBResult result = dbcontext.commitObjects();
-
-        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
-
-        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
     }
 }

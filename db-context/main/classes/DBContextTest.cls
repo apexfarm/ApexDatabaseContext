@@ -237,6 +237,53 @@ public with sharing class DBContextTest {
         new DMLResult(null, true, true);
     }
 
+    @IsTest
+    static void test_mockup() {
+        IDBContext dbcontext = new DBContextMockup();
+        dbcontext.insertObjects(new List<Account> { new Account() }, false);
+        dbcontext.upsertObjects(new List<Account> { new Account() }, false);
+        dbcontext.updateObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
+        dbcontext.deleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
+        dbcontext.undeleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
+        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+
+        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForDelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUndelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+    }
+
+    @IsTest
+    static void test_mockup_fake_ids() {
+        IDBContext dbcontext = new DBContextMockup();
+
+        List<Account> accounts = new List<Account> {
+            new Account(Name = 'Name 0'),
+            new Account(Name = 'Name 1'),
+            new Account(Name = 'Name 2')
+        };
+        dbcontext.insertObjects(accounts);
+        IDBResult result = dbcontext.commitObjects();
+
+        Map<Id, Account> accountMap = new Map<Id, Account>(accounts);
+        for (Integer i = 0; i < accounts.size(); i++) {
+            Account account = accounts[i];
+
+            System.assertEquals(account.Name, 'Name ' + i);
+            System.assertEquals(account.Name, accountMap.get(account.Id).Name);
+        }
+    }
+
     static String getFakeId(Schema.SObjectType objectType, Integer index) {
        return objectType.getDescribe().getKeyPrefix() + String.valueOf(index).leftPad(12, '0');
     }

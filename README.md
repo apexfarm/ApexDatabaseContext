@@ -2,11 +2,12 @@
 
 ![](https://img.shields.io/badge/version-1.1-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
-This is an easy to use *Unit of Work* pattern implementation, it has the following features:
+This is another *Unit of Work* pattern implementation, it has the following features:
 
-1. DMLs are executed in the order they were added, so no need to maintain sObject relationship dependency.
+1. DMLs are executed in the order they were added, and no need to maintain sObject relationship dependency.
 2. Automatically resolve relationships to populate parent Ids.
 3. Similar APIs to the ones used with `Database` class.
+4. Provide `DBContextMockup` for testing without permforming actual DMLs to the Database.
 
 ## Usage
 
