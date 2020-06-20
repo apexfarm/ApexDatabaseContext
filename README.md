@@ -4,7 +4,7 @@
 
 This is an implementation to the *Unit of Work* pattern. It has the following features:
 
-3. Easy to learn: similar APIs to the ones used with `Database` class.
+1. Easy to learn: similar APIs to the ones used with `Database` class.
 2. Easy to use: 
    - No need to maintain sObject relationship dependency.
    - Automatically resolve relationships to populate parent Ids.
