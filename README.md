@@ -1,6 +1,6 @@
 # Apex Database Context
 
-![](https://img.shields.io/badge/version-1.1-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
+![](https://img.shields.io/badge/version-1.2-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 This is an implementation to the *Unit of Work* pattern. It has the following features:
 
