@@ -41,8 +41,8 @@ public interface IDBContext {
     void deleteObjects(List<SObject> objects, Boolean allOrNone);
     void undeleteObjects(List<SObject> objects);
     void undeleteObjects(List<SObject> objects, Boolean allOrNone);
-
     void emptyRecycleBin(List<SObject> objects);
+    void emptyRecycleBin(List<SObject> objects, Boolean allOrNone);
 
     IDBResult commitObjects();
 }

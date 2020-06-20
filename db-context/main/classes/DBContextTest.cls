@@ -76,6 +76,24 @@ public with sharing class DBContextTest {
         dbcontext.commitObjects();
     }
 
+    @IsTest
+    static void test_AllOrNone_empty_list2() {
+        IDBContext dbcontext = new DBContext();
+        dbcontext.insertObjects(new List<Account> {}, true);
+        dbcontext.upsertObjects(new List<Account> {}, true);
+        dbcontext.updateObjects(new List<Account> {}, true);
+        dbcontext.deleteObjects(new List<Account> {}, true);
+        dbcontext.undeleteObjects(new List<Account> {}, true);
+        dbcontext.emptyRecycleBin(new List<Account> {}, true);
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+    }
 
     @IsTest
     static void test_AllOrNone_exception() {
@@ -98,7 +116,7 @@ public with sharing class DBContextTest {
         dbcontext.updateObjects(new List<Account> {}, false);
         dbcontext.deleteObjects(new List<Account> {}, false);
         dbcontext.undeleteObjects(new List<Account> {}, false);
-        dbcontext.emptyRecycleBin(new List<Account> {});
+        dbcontext.emptyRecycleBin(new List<Account> {}, false);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
@@ -117,7 +135,8 @@ public with sharing class DBContextTest {
         dbcontext.updateObjects(new List<Account> { new Account() }, false);
         dbcontext.deleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
         dbcontext.undeleteObjects(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
-        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) });
+        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, false);
+        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = getFakeId(Account.SObjectType, 1)) }, true);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
