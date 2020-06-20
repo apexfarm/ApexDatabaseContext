@@ -1,12 +1,14 @@
 # Apex Database Context
 
-![](https://img.shields.io/badge/version-1.1-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
+![](https://img.shields.io/badge/version-1.2-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
-This is an easy to use *Unit of Work* pattern implementation, it has the following features:
+This is an implementation to the *Unit of Work* pattern. It has the following features:
 
-1. DMLs are executed in the order they were added, so no need to maintain sObject relationship dependency.
-2. Automatically resolve relationships to populate parent Ids.
-3. Similar APIs to the ones used with `Database` class.
+3. Easy to learn: similar APIs to the ones used with `Database` class.
+2. Easy to use: 
+   - No need to maintain sObject relationship dependency.
+   - Automatically resolve relationships to populate parent Ids.
+3. Easy to test: Provide `DBContextMockup` for testing without permforming actual DMLs to the Database.
 
 ## Usage
 
