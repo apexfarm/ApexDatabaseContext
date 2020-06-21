@@ -32,6 +32,27 @@
 
 @IsTest
 public class DBContextMockup extends DBContext {
+    static Map<Schema.SObjectType, Index> objectIdIndexes { get; set; }
+
+    class Index {
+        Integer i = 0;
+    }
+
+    static {
+        objectIdIndexes = new Map<Schema.SObjectType, Index>();
+    }
+
+    public static String getFakeId(Schema.SObjectType objectType) {
+        if (!objectIdIndexes.containsKey(objectType)) {
+            objectIdIndexes.put(objectType, new Index());
+        }
+
+        Index idx = objectIdIndexes.get(objectType);
+        idx.i++;
+        return objectType.getDescribe().getKeyPrefix()
+            + '000zzzz' // start from a large Id to avoid confliction during unit test.
+            + String.valueOf(idx.i).leftPad(5, '0');
+    }
 
     public override IDBResult commitObjects() {
         System.Savepoint sp = Database.setSavePoint();
@@ -76,24 +97,6 @@ public class DBContextMockup extends DBContext {
 		}
         return result;
     }
-
-    static Map<Schema.SObjectType, Integer> objectIdIndexes { get; set; }
-
-    static {
-        objectIdIndexes = new Map<Schema.SObjectType, Integer>();
-    }
-
-    static String getFakeId(Schema.SObjectType objectType) {
-        if (!objectIdIndexes.containsKey(objectType)) {
-            objectIdIndexes.put(objectType, 0);
-        }
-        Integer index = objectIdIndexes.get(objectType) + 1;
-
-        // start from a large Id to avoid confliction during unit test.
-        Id objId = objectType.getDescribe().getKeyPrefix() + 'Z' + String.valueOf(index).leftPad(11, '0');
-        objectIdIndexes.put(objectType, index);
-        return objId;
-     }
 
     public class DBResultMockup implements IDBResult {
         public Map<Schema.SObjectType, List<DMLResult>> insertResults { get; set; }
