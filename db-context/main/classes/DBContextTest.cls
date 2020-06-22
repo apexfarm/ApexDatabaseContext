@@ -155,6 +155,35 @@ public with sharing class DBContextTest {
     }
 
     @IsTest
+    static void test_partial_one_object_list_child_context() {
+        IDBContext dbcontext = new DBContext();
+        IDBContext childContext1 = dbcontext.create();
+        IDBContext childContext2 = dbcontext.create();
+        childContext1.insertObjects(new List<Account> { new Account() }, false);
+        childContext2.upsertObjects(new List<Account> { new Account() }, false);
+        childContext1.updateObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
+        childContext2.deleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
+        childContext1.undeleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
+        childContext2.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
+        childContext1.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, true);
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForUpdate(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForUpsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForDelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForUndelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+
+        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForDelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUndelete(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+    }
+
+    @IsTest
     static void test_partial_relationship() {
         List<Account> accounts = new List<Account>();
         List<Contact> contacts = new List<Contact>();
@@ -181,8 +210,8 @@ public with sharing class DBContextTest {
     }
 
     @IsTest
-    static void test_partial_relationship_2k() {
-        Integer numberOfRecords = 2000;
+    static void test_partial_relationship_20() {
+        Integer numberOfRecords = 20;
         List<Account> accounts = new List<Account>();
         List<Contact> contacts = new List<Contact>();
         for (Integer i = 0; i < numberOfRecords/2; ++i) {
@@ -235,6 +264,7 @@ public with sharing class DBContextTest {
     @IsTest
     static void test_no_assertions() {
         new DMLResult(null, true, true);
+        IDBContext dbcontext = new DBContext();
     }
 
     @IsTest
@@ -302,22 +332,61 @@ public with sharing class DBContextTest {
         IDBContext dbcontext = new DBContextMockup();
 
         // pretend contact service created some contacts;
-        IDBContext dbcontext_child2 = dbcontext.create();
+        IDBContext dbcontext_child1 = dbcontext.create();
         List<Contact> contacts = new List<Contact> {
             new Contact(LastName = 'Name 0'),
             new Contact(LastName = 'Name 1'),
             new Contact(LastName = 'Name 2')
         };
-        dbcontext_child2.insertObjects(contacts);
+        dbcontext_child1.insertObjects(contacts);
 
         // pretend account service created some accounts;
-        IDBContext dbcontext_child1 = dbcontext.create();
+        IDBContext dbcontext_child2 = dbcontext.create();
         List<Account> accounts = new List<Account> {
             new Account(Name = 'Name 0'),
             new Account(Name = 'Name 1'),
             new Account(Name = 'Name 2')
         };
-        dbcontext_child1.insertObjects(accounts);
+        dbcontext_child2.insertObjects(accounts);
+
+        // bind the relationship in the main context;
+        for (Integer i = 0; i < accounts.size(); i++) {
+            contacts[i].Account = accounts[i];
+        }
+        dbcontext.updateObjects(contacts);
+
+        IDBResult result = dbcontext.commitObjects();
+
+        for (Integer i = 0; i < accounts.size(); i++) {
+            Account account = accounts[i];
+            Contact contact = contacts[i];
+
+            system.assertNotEquals(null, account.Id);
+            system.assertNotEquals(null, contact.AccountId);
+            System.assertEquals(account.Id, contact.AccountId);
+        }
+    }
+    @IsTest
+    static void test_mockup_child_context2() {
+        IDBContext dbcontext = new DBContextMockup();
+
+        // pretend contact service created some contacts;
+        IDBContext dbcontext_child1 = dbcontext.create();
+        List<Contact> contacts = new List<Contact> {
+            new Contact(LastName = 'Name 0'),
+            new Contact(LastName = 'Name 1'),
+            new Contact(LastName = 'Name 2')
+        };
+        dbcontext_child1.insertObjects(contacts);
+
+        // pretend account service created some accounts;
+        IDBContext dbcontext_child2 = dbcontext_child1.create();
+        List<Account> accounts = new List<Account> {
+            new Account(Name = 'Name 0'),
+            new Account(Name = 'Name 1'),
+            new Account(Name = 'Name 2')
+        };
+        dbcontext_child2.insertObjects(accounts);
 
         // bind the relationship in the main context;
         for (Integer i = 0; i < accounts.size(); i++) {

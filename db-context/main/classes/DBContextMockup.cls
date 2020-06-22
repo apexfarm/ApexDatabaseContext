@@ -162,80 +162,28 @@ public class DBContextMockup extends DBContext {
 
         public List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.insertResults.containsKey(objectType)) {
-                for (DMLResult result : this.insertResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
             return dmlResults;
         }
 
         public List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.updateResults.containsKey(objectType)) {
-                for (DMLResult result : this.updateResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
             return dmlResults;
         }
 
         public List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.upsertResults.containsKey(objectType)) {
-                for (DMLResult result : this.upsertResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForDelete(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.deleteResults.containsKey(objectType)) {
-                for (DMLResult result : this.deleteResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForUndelete(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.undeleteResults.containsKey(objectType)) {
-                for (DMLResult result : this.undeleteResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.emptyRecycleBinResults.containsKey(objectType)) {
-                for (DMLResult result : this.emptyRecycleBinResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getResultsForInsert(Schema.SObjectType objectType) {
