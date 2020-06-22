@@ -32,22 +32,22 @@
 
 @IsTest
 public class DBContextMockup extends DBContext {
-    static Map<Schema.SObjectType, Index> objectIdIndexes { get; set; }
+    static Map<Schema.SObjectType, Indexer> objectIdIndexes { get; set; }
 
-    class Index {
+    class Indexer {
         Integer i = 0;
     }
 
     static {
-        objectIdIndexes = new Map<Schema.SObjectType, Index>();
+        objectIdIndexes = new Map<Schema.SObjectType, Indexer>();
     }
 
     public static String getFakeId(Schema.SObjectType objectType) {
         if (!objectIdIndexes.containsKey(objectType)) {
-            objectIdIndexes.put(objectType, new Index());
+            objectIdIndexes.put(objectType, new Indexer());
         }
 
-        Index idx = objectIdIndexes.get(objectType);
+        Indexer idx = objectIdIndexes.get(objectType);
         idx.i++;
         return objectType.getDescribe().getKeyPrefix()
             + '000zzzz' // start from a large Id to avoid confliction during unit test.

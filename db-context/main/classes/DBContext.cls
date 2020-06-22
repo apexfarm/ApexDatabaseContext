@@ -35,9 +35,8 @@ public virtual class DBContext implements IDBContext {
     static Map<Schema.SObjectType, List<Schema.SObjectField>> relationshipFieldCache { get; set; }
     static Map<Schema.SObjectType, List<String>> relationshipNameCache { get; set; }
 
-
-
     protected List<DMLDescriptor> dmlDescriptors { get; set; }
+    protected Map<Schema.SObjectType, Table> tables { get; set; }
 
     static {
         relationshipFieldCache = new Map<Schema.SObjectType, List<Schema.SObjectField>>();
@@ -45,7 +44,15 @@ public virtual class DBContext implements IDBContext {
     }
 
     {
-        dmlDescriptors = new List<DMLDescriptor>();
+        this.dmlDescriptors = new List<DMLDescriptor>();
+        this.tables = new Map<Schema.SObjectType, Table>();
+    }
+
+    Table getTable(Schema.SObjectType objectType) {
+        if (!this.tables.containsKey(objectType)) {
+            this.tables.put(objectType, new Table(objectType));
+        }
+        return this.tables.get(objectType);
     }
 
     static void resolveRelationshipFields(Schema.SObjectType objectType) {
@@ -66,58 +73,66 @@ public virtual class DBContext implements IDBContext {
     }
 
     public void insertObjects(List<SObject> objects) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_INSERT, objects, true));
+        register(DMLOperation.DO_INSERT, objects, true);
     }
 
     public void insertObjects(List<SObject> objects, Boolean allOrNone) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_INSERT, objects, allOrNone));
+        register(DMLOperation.DO_INSERT, objects, allOrNone);
     }
 
     public void upsertObjects(List<SObject> objects) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_UPSERT, objects, true));
+        register(DMLOperation.DO_UPSERT, objects, true);
     }
 
     public void upsertObjects(List<SObject> objects, Boolean allOrNone) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_UPSERT, objects, allOrNone));
+        register(DMLOperation.DO_UPSERT, objects, allOrNone);
     }
 
     public void updateObjects(List<SObject> objects) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_UPDATE, objects, true));
+        register(DMLOperation.DO_UPDATE, objects, true);
     }
 
     public void updateObjects(List<SObject> objects, Boolean allOrNone) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_UPDATE, objects, allOrNone));
+        register(DMLOperation.DO_UPDATE, objects, allOrNone);
+    }
+
+    public List<SObject> updateObjects(List<SObject> objects, List<Schema.SObjectField> fields) {
+        if (objects != null) {
+            Schema.SObjectType objectType = objects.getSObjectType();
+            return this.getTable(objectType).refresh(objects, fields);
+        }
+        return objects;
     }
 
     public void deleteObjects(List<SObject> objects) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_DELETE, objects, true));
+        register(DMLOperation.DO_DELETE, objects, true);
     }
 
     public void deleteObjects(List<SObject> objects, Boolean allOrNone) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_DELETE, objects, allOrNone));
+        register(DMLOperation.DO_DELETE, objects, allOrNone);
     }
 
     public void undeleteObjects(List<SObject> objects) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_UNDELETE, objects, true));
+        register(DMLOperation.DO_UNDELETE, objects, true);
     }
 
     public void undeleteObjects(List<SObject> objects, Boolean allOrNone) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_UNDELETE, objects, allOrNone));
+        register(DMLOperation.DO_UNDELETE, objects, allOrNone);
     }
 
     public void emptyRecycleBin(List<SObject> objects) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_EMPTY_RECYCLE_BIN, objects, true));
+        register(DMLOperation.DO_EMPTY_RECYCLE_BIN, objects, true);
     }
 
     public void emptyRecycleBin(List<SObject> objects, Boolean allOrNone) {
-        dmlDescriptors.add(new DMLDescriptor(DMLOperation.DO_EMPTY_RECYCLE_BIN, objects, allOrNone));
+        register(DMLOperation.DO_EMPTY_RECYCLE_BIN, objects, allOrNone);
     }
 
     public virtual IDBResult commitObjects() {
         System.Savepoint sp = Database.setSavePoint();
         DBResult result = new DBResult();
 		try {
-            for (DMLDescriptor dmlDescriptor : dmlDescriptors) {
+            for (DMLDescriptor dmlDescriptor : this.dmlDescriptors) {
                 if (dmlDescriptor.objects != null) {
                     switch on dmlDescriptor.dmlOperation {
                         when DO_INSERT {
@@ -194,12 +209,20 @@ public virtual class DBContext implements IDBContext {
                     }
                 }
             }
-            dmlDescriptors.clear();
+            this.dmlDescriptors.clear();
 		} catch (Exception ex) {
 			Database.rollback(sp);
 			throw ex;
 		}
         return result;
+    }
+
+    private void register(DMLOperation dmlOperation, List<SObject> objects, Boolean allOrNone) {
+        if (objects != null) {
+            Schema.SObjectType objectType = objects.getSObjectType();
+            this.getTable(objectType).register(dmlOperation, objects);
+            this.dmlDescriptors.add(new DMLDescriptor(dmlOperation, objectType, objects, allOrNone));
+        }
     }
 
     public enum DMLOperation {
@@ -219,17 +242,15 @@ public virtual class DBContext implements IDBContext {
         List<Schema.SObjectField> relationshipFields { get; set; }
         List<String> relationshipNames { get; set; }
 
-        DMLDescriptor(DMLOperation dmlOperation, List<SObject> objects, Boolean allOrNone) {
+        DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<SObject> objects, Boolean allOrNone) {
             this.dmlOperation = dmlOperation;
             this.allOrNone = allOrNone;
             this.objects = objects;
+            this.objectType = objectType;
 
-            if (objects != null) {
-                this.objectType = objects.getSObjectType();
-                resolveRelationshipFields(this.objectType);
-                this.relationshipFields = relationshipFieldCache.get(this.objectType);
-                this.relationshipNames = relationshipNameCache.get(this.objectType);
-            }
+            resolveRelationshipFields(this.objectType);
+            this.relationshipFields = relationshipFieldCache.get(this.objectType);
+            this.relationshipNames = relationshipNameCache.get(this.objectType);
         }
 
         public virtual void assignParentIds() {
@@ -243,6 +264,74 @@ public virtual class DBContext implements IDBContext {
                     ) {
                         obj.put(parentIdField, obj.getSObject(relationshipName).Id);
                     }
+                }
+            }
+        }
+    }
+
+    class Table {
+        Schema.SObjectType objectType { get; set; }
+        List<SObject> insertedObjects { get; set; }
+        Map<Id, SObject> updatedObjects { get; set; }
+        Map<Id, SObject> deletedObjects { get; set; }
+        Map<Id, SObject> undeletedObjects { get; set; }
+        Map<Id, SObject> emptiedObjects { get; set; }
+
+        Table(Schema.SObjectType objectType) {
+            this.objectType = objectType;
+            insertedObjects = new List<SObject>();
+            updatedObjects = new Map<Id, SObject>();
+            deletedObjects = new Map<Id, SObject>();
+            undeletedObjects = new Map<Id, SObject>();
+            emptiedObjects = new Map<Id, SObject>();
+        }
+
+        List<SObject> refresh(List<SObject> objects, List<Schema.SObjectField> fields) {
+            if (this.updatedObjects.isEmpty()) {
+                return objects;
+            }
+
+            List<SObject> replacedObjects = new List<SObject>();
+            for (SObject obj : objects) {
+                SObject existingObj = this.updatedObjects.get(obj.Id);
+                if (existingObj != null) {
+                    for (Schema.SObjectField field : fields) {
+                        existingObj.put(field, obj.get(field));
+                    }
+                    replacedObjects.add(existingObj);
+                } else {
+                    this.updatedObjects.put(obj.Id, obj);
+                    replacedObjects.add(obj);
+                }
+            }
+            return replacedObjects;
+        }
+
+        void register(DMLOperation dmlOperation, List<SObject> objects) {
+            switch on dmlOperation {
+                when DO_INSERT {
+                    this.insertedObjects.addAll(objects);
+                }
+                when DO_UPSERT {
+                    for (SObject obj : objects) {
+                        if (obj.Id == null) {
+                            this.insertedObjects.add(obj);
+                        } else {
+                            this.updatedObjects.put(obj.Id, obj);
+                        }
+                    }
+                }
+                when DO_UPDATE {
+                    this.updatedObjects.putAll(new Map<Id, SObject>(objects));
+                }
+                when DO_DELETE {
+                    this.deletedObjects.putAll(new Map<Id, SObject>(objects));
+                }
+                when DO_UNDELETE {
+                    this.undeletedObjects.putAll(new Map<Id, SObject>(objects));
+                }
+                when DO_EMPTY_RECYCLE_BIN {
+                    this.emptiedObjects.putAll(new Map<Id, SObject>(objects));
                 }
             }
         }

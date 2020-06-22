@@ -37,6 +37,7 @@ public interface IDBContext {
     void upsertObjects(List<SObject> objects, Boolean allOrNone);
     void updateObjects(List<SObject> objects);
     void updateObjects(List<SObject> objects, Boolean allOrNone);
+    List<SObject> updateObjects(List<SObject> objects, List<Schema.SObjectField> fields);
     void deleteObjects(List<SObject> objects);
     void deleteObjects(List<SObject> objects, Boolean allOrNone);
     void undeleteObjects(List<SObject> objects);

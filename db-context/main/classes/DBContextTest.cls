@@ -132,7 +132,7 @@ public with sharing class DBContextTest {
         IDBContext dbcontext = new DBContext();
         dbcontext.insertObjects(new List<Account> { new Account() }, false);
         dbcontext.upsertObjects(new List<Account> { new Account() }, false);
-        dbcontext.updateObjects(new List<Account> { new Account() }, false);
+        dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
         dbcontext.deleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
         dbcontext.undeleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
         dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
