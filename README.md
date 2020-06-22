@@ -97,7 +97,7 @@ With a singleton we can track the order of DML invocations provided by developer
 
 ### Child Contexts
 
-If some data needed to be committed prior and can be committed standalone, please create a child IDBContext to perform the DMLs.
+If some data have to be committed prior and can be committed standalone, please create a child IDBContext to perform the DMLs.
 
 ```java
 IDBContext mainContext = new DBContext();
@@ -111,11 +111,11 @@ mainContext.insertObjects(cases);
 mainContext.commitObjects();
 ```
 
-Child contexts don't have to be always explicitly committed. `mainContext.commitObjects()` can commit any uncommitted child contextes, in the [Depth First Post Order](https://en.wikipedia.org/wiki/Tree_traversal#Post-order_(LRN)).
+Child contexts don't have to be explicitly committed. `mainContext.commitObjects()` can commit any uncommitted child contextes, in the [Depth First Post Order](https://en.wikipedia.org/wiki/Tree_traversal#Post-order_(LRN)).
 
 ### IDBContext Mockup
 
-DBContextMockup is an always success IDBContext Implementation, no error will raised or returned. Extreme large fake ID number are assigned to the newly inserted sObjects. So the following could be possible:
+DBContextMockup is an always-success IDBContext Implementation, no error will raised or returned. Extreme large fake ID number are assigned to the newly inserted sObjects. So the following could be possible:
 
 ```java
 IDBContext dbcontext = new DBContextMockup();
