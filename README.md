@@ -2,7 +2,7 @@
 
 ![](https://img.shields.io/badge/version-1.3-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
-This is an implementation to the *Unit of Work* pattern. It has the following features:
+This library is NOT an implementation of the *[Unit of Work](https://martinfowler.com/eaaCatalog/unitOfWork.html)* pattern, because it doesn't combine DML operations to the same sObject. But it still performs all DML operations as a unit in a command design pattern way. It has the following features:
 
 1. Easy to learn: similar APIs to the ones used with `Database` class.
 2. Easy to use: 
@@ -87,11 +87,13 @@ dbcontext.updateObjects(accounts); // update the accounts even they are not save
 
 ### Singleton Context
 
-Please instantiate the IDBContext as a singleton, so it can be shared among service classes, trigger handlers etc. In the real world there is complexity around the order of DML invocation, such as the following classes can invoke DML statements in the following order:
+Please instantiate the IDBContext as a singleton, so it can be shared among service classes, trigger handlers etc. In the real world there is complexity around the order of DML invocation, such as the following classes can invoke DML statements in arbitrary orders:
 
 ```
 1. Controller Class => 2. Service Class => 3. ProcessBuilder => 4. Trigger => 5. Service Class
 ```
+
+With a singleton we can track the order of DML invocations provided by developers.
 
 ### Child Contexts
 
@@ -109,7 +111,7 @@ mainContext.insertObjects(cases);
 mainContext.commitObjects();
 ```
 
-Child contexts don't have to be always explicitly committed. `mainContext.commitObjects()` can invoke any uncommitted child contextes, in the [depth first post order](https://en.wikipedia.org/wiki/Tree_traversal#Post-order_(LRN)).
+Child contexts don't have to be always explicitly committed. `mainContext.commitObjects()` can commit any uncommitted child contextes, in the [Depth First Post Order](https://en.wikipedia.org/wiki/Tree_traversal#Post-order_(LRN)).
 
 ### IDBContext Mockup
 
