@@ -30,72 +30,74 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-@IsTest
 public class DBContextMockup extends DBContext {
-    static Map<Schema.SObjectType, Index> objectIdIndexes { get; set; }
+    static Map<Schema.SObjectType, Indexer> objectIdIndexes { get; set; }
 
-    class Index {
+    class Indexer {
         Integer i = 0;
     }
 
     static {
-        objectIdIndexes = new Map<Schema.SObjectType, Index>();
+        objectIdIndexes = new Map<Schema.SObjectType, Indexer>();
     }
 
     public static String getFakeId(Schema.SObjectType objectType) {
         if (!objectIdIndexes.containsKey(objectType)) {
-            objectIdIndexes.put(objectType, new Index());
+            objectIdIndexes.put(objectType, new Indexer());
         }
 
-        Index idx = objectIdIndexes.get(objectType);
+        Indexer idx = objectIdIndexes.get(objectType);
         idx.i++;
         return objectType.getDescribe().getKeyPrefix()
             + '000zzzz' // start from a large Id to avoid confliction during unit test.
             + String.valueOf(idx.i).leftPad(5, '0');
     }
 
+    public override IDBContext create() {
+        IDBContext context = new DBContextMockup();
+        this.childContexts.add(context);
+        return context;
+    }
+
     public override IDBResult commitObjects() {
-        System.Savepoint sp = Database.setSavePoint();
         DBResultMockup result = new DBResultMockup();
-		try {
-            for (DMLDescriptor dmlDescriptor : dmlDescriptors) {
+        commitContext(this, result);
+        return result;
+    }
+
+    protected override void commitObjects(DMLDescriptor dmlDescriptor, IDBResult result) {
+        DBResultMockup dbResult = (DBResultMockup)result;
+        switch on dmlDescriptor.dmlOperation {
+            when DO_INSERT, DO_UPSERT, DO_UPDATE {
                 if (dmlDescriptor.objects != null) {
-                    switch on dmlDescriptor.dmlOperation {
-                        when DO_INSERT, DO_UPSERT, DO_UPDATE {
-                            dmlDescriptor.assignParentIds();
-                            List<DMLResult> dmlResults = result.getDMLResults(
-                                dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
-                            for (SObject obj : dmlDescriptor.objects) {
-                                if (obj.Id == null) {
-                                    obj.Id = getFakeId(dmlDescriptor.objectType);
-                                    if (!dmlDescriptor.allOrNone) {
-                                        dmlResults.add(new DMLResult(obj.Id, true, true));
-                                    }
-                                } else {
-                                    if (!dmlDescriptor.allOrNone) {
-                                        dmlResults.add(new DMLResult(obj.Id, true, false));
-                                    }
-                                }
-                            }
-                        }
-                        when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
+                    List<DMLResult> dmlResults = dbResult.getDMLResults(
+                        dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
+
+                    dmlDescriptor.assignParentIds();
+                    for (SObject obj : dmlDescriptor.objects) {
+                        if (obj.Id == null) {
+                            obj.Id = getFakeId(dmlDescriptor.objectType);
                             if (!dmlDescriptor.allOrNone) {
-                                List<DMLResult> dmlResults = result.getDMLResults(
-                                    dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
-                                for (SObject obj : dmlDescriptor.objects) {
-                                    dmlResults.add(new DMLResult(obj.Id, true, false));
-                                }
+                                dmlResults.add(new DMLResult(obj.Id, true, true));
+                            }
+                        } else {
+                            if (!dmlDescriptor.allOrNone) {
+                                dmlResults.add(new DMLResult(obj.Id, true, false));
                             }
                         }
                     }
                 }
             }
-            dmlDescriptors.clear();
-		} catch (Exception ex) {
-			Database.rollback(sp);
-			throw ex;
-		}
-        return result;
+            when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
+                if (dmlDescriptor.objectIds != null && !dmlDescriptor.allOrNone) {
+                    List<DMLResult> dmlResults = dbResult.getDMLResults(
+                        dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
+                    for (Id objId : dmlDescriptor.objectIds) {
+                        dmlResults.add(new DMLResult(objId, true, false));
+                    }
+                }
+            }
+        }
     }
 
     public class DBResultMockup implements IDBResult {
@@ -160,80 +162,28 @@ public class DBContextMockup extends DBContext {
 
         public List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.insertResults.containsKey(objectType)) {
-                for (DMLResult result : this.insertResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
             return dmlResults;
         }
 
         public List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.updateResults.containsKey(objectType)) {
-                for (DMLResult result : this.updateResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
             return dmlResults;
         }
 
         public List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.upsertResults.containsKey(objectType)) {
-                for (DMLResult result : this.upsertResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForDelete(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.deleteResults.containsKey(objectType)) {
-                for (DMLResult result : this.deleteResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForUndelete(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.undeleteResults.containsKey(objectType)) {
-                for (DMLResult result : this.undeleteResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-
-            if (this.emptyRecycleBinResults.containsKey(objectType)) {
-                for (DMLResult result : this.emptyRecycleBinResults.get(objectType)) {
-                    if(!result.isSuccess) {
-                        dmlResults.add(result);
-                    }
-                }
-            }
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getResultsForInsert(Schema.SObjectType objectType) {

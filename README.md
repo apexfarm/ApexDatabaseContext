@@ -1,16 +1,16 @@
 # Apex Database Context
 
-![](https://img.shields.io/badge/version-1.2-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
+![](https://img.shields.io/badge/version-1.3-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
-This is an implementation to the *Unit of Work* pattern. It has the following features:
+This library is NOT an implementation of the *[Unit of Work](https://martinfowler.com/eaaCatalog/unitOfWork.html)* pattern, because it doesn't combine DML operations to the same sObject. But it still performs all DML operations as a unit in a command design pattern way. It has the following features:
 
 1. Easy to learn: similar APIs to the ones used with `Database` class.
 2. Easy to use: 
    - No need to maintain sObject relationship dependency.
    - Automatically resolve relationships to populate parent Ids.
-3. Easy to test: Provide `DBContextMockup` for testing without permforming actual DMLs to the Database.
+3. Easy to test: Provide [IDBContext Mockup](#idbcontext-mockup) for testing without permforming actual DMLs to the Database.
 
-## Usage
+## Example
 
 ```java
 public without sharing class AccountController {
@@ -64,12 +64,71 @@ public without sharing class ContactService {
         for (Account account : accounts) {
             contacts.add(new Contact(
                 LastName = 'Last Name ' + i,
-                Account = account
+                Account = account // ** account doesn't have an Id yet.
             ));
         }
         dbcontext.insertObjects(contacts);
         return contacts;
     }
+}
+```
+
+## Usage
+
+### Phantom Updates
+
+This implementaion is more towards a command design pattern, so it can support "phantom" updates, such as:
+
+```java
+IDBContext dbcontext = new DBContext();
+dbcontext.insertObjects(accounts);
+dbcontext.updateObjects(accounts); // update the accounts even they are not saved to the database
+```
+
+### Singleton Context
+
+Please instantiate the IDBContext as a singleton, so it can be shared among service classes, trigger handlers etc. In the real world there is complexity around the order of DML invocation, such as the following classes can invoke DML statements in arbitrary orders:
+
+```
+1. Controller Class => 2. Service Class => 3. ProcessBuilder => 4. Trigger => 5. Service Class
+```
+
+With a singleton we can track the order of DML invocations provided by developers.
+
+### Child Contexts
+
+If some data needed to be committed prior and can be committed standalone, please create a child IDBContext to perform the DMLs.
+
+```java
+IDBContext mainContext = new DBContext();
+mainContext.insertObjects(accounts);
+
+IDBContext childContext = mainContext.create(); // create child IDBContext
+childContext.insertObjects(contacts);
+childContext.commitObjects();
+
+mainContext.insertObjects(cases);
+mainContext.commitObjects();
+```
+
+Child contexts don't have to be always explicitly committed. `mainContext.commitObjects()` can commit any uncommitted child contextes, in the [Depth First Post Order](https://en.wikipedia.org/wiki/Tree_traversal#Post-order_(LRN)).
+
+### IDBContext Mockup
+
+DBContextMockup is an always success IDBContext Implementation, no error will raised or returned. Extreme large fake ID number are assigned to the newly inserted sObjects. So the following could be possible:
+
+```java
+IDBContext dbcontext = new DBContextMockup();
+List<Account> accounts = ...; // 3 new accounts without Ids
+dbcontext.insertObjects(accounts);
+List<Contact> contacts = [SELECT Id FROM Contact LIMIT 3];
+for (Integer i = 0; i < 3; i++) {
+    contacts[i].Account = accounts[i];
+}
+dbcontext.commitObjects();
+
+for (Integer i = 0; i < 3; i++) {
+    System.assertEquals(accounts[i].Id, contacts[i].AccountId);
 }
 ```
 
@@ -120,7 +179,7 @@ Use the following methods to get only the error results of a particular operatio
 
 ### DMLResult
 
-DMLResult contians field combination of Database.SaveResult, Database.UpsertResult, Database.DeleteResult, Database.UndeleteResult, and Database.EmptyRecycleBinResult.
+DMLResult class is a field combination of Database.SaveResult, Database.UpsertResult, Database.DeleteResult, Database.UndeleteResult, and Database.EmptyRecycleBinResult.
 
 | Properties | Data Type              |
 | ---------- | ---------------------- |
