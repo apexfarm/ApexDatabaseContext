@@ -59,12 +59,13 @@ public class DBContextMockup extends DBContext {
         DBResultMockup result = new DBResultMockup();
 		try {
             for (DMLDescriptor dmlDescriptor : dmlDescriptors) {
-                if (dmlDescriptor.objects != null) {
-                    switch on dmlDescriptor.dmlOperation {
-                        when DO_INSERT, DO_UPSERT, DO_UPDATE {
-                            dmlDescriptor.assignParentIds();
+                switch on dmlDescriptor.dmlOperation {
+                    when DO_INSERT, DO_UPSERT, DO_UPDATE {
+                        if (dmlDescriptor.objects != null) {
                             List<DMLResult> dmlResults = result.getDMLResults(
                                 dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
+
+                            dmlDescriptor.assignParentIds();
                             for (SObject obj : dmlDescriptor.objects) {
                                 if (obj.Id == null) {
                                     obj.Id = getFakeId(dmlDescriptor.objectType);
@@ -78,13 +79,13 @@ public class DBContextMockup extends DBContext {
                                 }
                             }
                         }
-                        when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
-                            if (!dmlDescriptor.allOrNone) {
-                                List<DMLResult> dmlResults = result.getDMLResults(
-                                    dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
-                                for (SObject obj : dmlDescriptor.objects) {
-                                    dmlResults.add(new DMLResult(obj.Id, true, false));
-                                }
+                    }
+                    when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
+                        if (dmlDescriptor.objectIds != null && !dmlDescriptor.allOrNone) {
+                            List<DMLResult> dmlResults = result.getDMLResults(
+                                dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
+                            for (Id objId : dmlDescriptor.objectIds) {
+                                dmlResults.add(new DMLResult(objId, true, false));
                             }
                         }
                     }
