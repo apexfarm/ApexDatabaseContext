@@ -31,6 +31,10 @@
  */
 
 public interface IDBContext {
+    List<IDBContext> childContexts();
+    List<DBContext.DMLDescriptor> dmlDescriptors();
+    IDBContext create();
+
     void insertObjects(List<SObject> objects);
     void insertObjects(List<SObject> objects, Boolean allOrNone);
     void upsertObjects(List<SObject> objects);

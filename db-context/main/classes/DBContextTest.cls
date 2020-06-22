@@ -264,6 +264,80 @@ public with sharing class DBContextTest {
     }
 
     @IsTest
+    static void test_mockup_phantom_update() {
+        IDBContext dbcontext = new DBContextMockup();
+
+        List<Contact> contacts = new List<Contact> {
+            new Contact(LastName = 'Name 0'),
+            new Contact(LastName = 'Name 1'),
+            new Contact(LastName = 'Name 2')
+        };
+        dbcontext.insertObjects(contacts);
+
+
+        List<Account> accounts = new List<Account> {
+            new Account(Name = 'Name 0'),
+            new Account(Name = 'Name 1'),
+            new Account(Name = 'Name 2')
+        };
+        dbcontext.insertObjects(accounts);
+
+        for (Integer i = 0; i < accounts.size(); i++) {
+            contacts[i].Account = accounts[i];
+        }
+        dbcontext.updateObjects(contacts);
+
+        IDBResult result = dbcontext.commitObjects();
+
+        for (Integer i = 0; i < accounts.size(); i++) {
+            Account account = accounts[i];
+            Contact contact = contacts[i];
+
+            System.assertEquals(account.Id, contact.AccountId);
+        }
+    }
+
+    @IsTest
+    static void test_mockup_child_context() {
+        IDBContext dbcontext = new DBContextMockup();
+
+        // pretend contact service created some contacts;
+        IDBContext dbcontext_child2 = dbcontext.create();
+        List<Contact> contacts = new List<Contact> {
+            new Contact(LastName = 'Name 0'),
+            new Contact(LastName = 'Name 1'),
+            new Contact(LastName = 'Name 2')
+        };
+        dbcontext_child2.insertObjects(contacts);
+
+        // pretend account service created some accounts;
+        IDBContext dbcontext_child1 = dbcontext.create();
+        List<Account> accounts = new List<Account> {
+            new Account(Name = 'Name 0'),
+            new Account(Name = 'Name 1'),
+            new Account(Name = 'Name 2')
+        };
+        dbcontext_child1.insertObjects(accounts);
+
+        // bind the relationship in the main context;
+        for (Integer i = 0; i < accounts.size(); i++) {
+            contacts[i].Account = accounts[i];
+        }
+        dbcontext.updateObjects(contacts);
+
+        IDBResult result = dbcontext.commitObjects();
+
+        for (Integer i = 0; i < accounts.size(); i++) {
+            Account account = accounts[i];
+            Contact contact = contacts[i];
+
+            system.assertNotEquals(null, account.Id);
+            system.assertNotEquals(null, contact.AccountId);
+            System.assertEquals(account.Id, contact.AccountId);
+        }
+    }
+
+    @IsTest
     static void test_mockup_fake_ids() {
         IDBContext dbcontext = new DBContextMockup();
 

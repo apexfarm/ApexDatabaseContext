@@ -30,7 +30,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-@IsTest
 public class DBContextMockup extends DBContext {
     static Map<Schema.SObjectType, Indexer> objectIdIndexes { get; set; }
 
@@ -54,49 +53,51 @@ public class DBContextMockup extends DBContext {
             + String.valueOf(idx.i).leftPad(5, '0');
     }
 
-    public override IDBResult commitObjects() {
-        System.Savepoint sp = Database.setSavePoint();
-        DBResultMockup result = new DBResultMockup();
-		try {
-            for (DMLDescriptor dmlDescriptor : dmlDescriptors) {
-                switch on dmlDescriptor.dmlOperation {
-                    when DO_INSERT, DO_UPSERT, DO_UPDATE {
-                        if (dmlDescriptor.objects != null) {
-                            List<DMLResult> dmlResults = result.getDMLResults(
-                                dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
+    public override IDBContext create() {
+        IDBContext context = new DBContextMockup();
+        this.childContexts.add(context);
+        return context;
+    }
 
-                            dmlDescriptor.assignParentIds();
-                            for (SObject obj : dmlDescriptor.objects) {
-                                if (obj.Id == null) {
-                                    obj.Id = getFakeId(dmlDescriptor.objectType);
-                                    if (!dmlDescriptor.allOrNone) {
-                                        dmlResults.add(new DMLResult(obj.Id, true, true));
-                                    }
-                                } else {
-                                    if (!dmlDescriptor.allOrNone) {
-                                        dmlResults.add(new DMLResult(obj.Id, true, false));
-                                    }
-                                }
+    public override IDBResult commitObjects() {
+        DBResultMockup result = new DBResultMockup();
+        commitContext(this, result);
+        return result;
+    }
+
+    protected override void commitObjects(DMLDescriptor dmlDescriptor, IDBResult result) {
+        DBResultMockup dbResult = (DBResultMockup)result;
+        switch on dmlDescriptor.dmlOperation {
+            when DO_INSERT, DO_UPSERT, DO_UPDATE {
+                if (dmlDescriptor.objects != null) {
+                    List<DMLResult> dmlResults = dbResult.getDMLResults(
+                        dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
+
+                    dmlDescriptor.assignParentIds();
+                    for (SObject obj : dmlDescriptor.objects) {
+                        if (obj.Id == null) {
+                            obj.Id = getFakeId(dmlDescriptor.objectType);
+                            if (!dmlDescriptor.allOrNone) {
+                                dmlResults.add(new DMLResult(obj.Id, true, true));
                             }
-                        }
-                    }
-                    when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
-                        if (dmlDescriptor.objectIds != null && !dmlDescriptor.allOrNone) {
-                            List<DMLResult> dmlResults = result.getDMLResults(
-                                dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
-                            for (Id objId : dmlDescriptor.objectIds) {
-                                dmlResults.add(new DMLResult(objId, true, false));
+                        } else {
+                            if (!dmlDescriptor.allOrNone) {
+                                dmlResults.add(new DMLResult(obj.Id, true, false));
                             }
                         }
                     }
                 }
             }
-            dmlDescriptors.clear();
-		} catch (Exception ex) {
-			Database.rollback(sp);
-			throw ex;
-		}
-        return result;
+            when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
+                if (dmlDescriptor.objectIds != null && !dmlDescriptor.allOrNone) {
+                    List<DMLResult> dmlResults = dbResult.getDMLResults(
+                        dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
+                    for (Id objId : dmlDescriptor.objectIds) {
+                        dmlResults.add(new DMLResult(objId, true, false));
+                    }
+                }
+            }
+        }
     }
 
     public class DBResultMockup implements IDBResult {
