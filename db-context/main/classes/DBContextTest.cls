@@ -132,11 +132,11 @@ public with sharing class DBContextTest {
         IDBContext dbcontext = new DBContext();
         dbcontext.insertObjects(new List<Account> { new Account() }, false);
         dbcontext.upsertObjects(new List<Account> { new Account() }, false);
-        dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        dbcontext.deleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        dbcontext.undeleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, true);
+        dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.deleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.undeleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, true);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
@@ -161,11 +161,11 @@ public with sharing class DBContextTest {
         IDBContext childContext2 = dbcontext.create();
         childContext1.insertObjects(new List<Account> { new Account() }, false);
         childContext2.upsertObjects(new List<Account> { new Account() }, false);
-        childContext1.updateObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        childContext2.deleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        childContext1.undeleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        childContext2.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        childContext1.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, true);
+        childContext1.updateObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        childContext2.deleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        childContext1.undeleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        childContext2.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        childContext1.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, true);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
@@ -189,7 +189,7 @@ public with sharing class DBContextTest {
         List<Contact> contacts = new List<Contact>();
         for (Integer i = 0; i < 10; ++i) {
             accounts.add(new Account(
-                Id = DBContextMockup.getFakeId(Account.SObjectType)
+                Id = DBContextMock.getFakeId(Account.SObjectType)
             ));
             for (Integer j = 0; j < 2; ++j) {
                 contacts.add(new Contact(
@@ -216,7 +216,7 @@ public with sharing class DBContextTest {
         List<Contact> contacts = new List<Contact>();
         for (Integer i = 0; i < numberOfRecords/2; ++i) {
             accounts.add(new Account(
-                Id = DBContextMockup.getFakeId(Account.SObjectType)
+                Id = DBContextMock.getFakeId(Account.SObjectType)
             ));
             contacts.add(new Contact(
                 Account = accounts[i]
@@ -250,7 +250,7 @@ public with sharing class DBContextTest {
         dbcontext.commitObjects();
 
         for (Integer i = 0; i < 10; ++i) {
-            parentCases[i].Id = DBContextMockup.getFakeId(Case.SObjectType);
+            parentCases[i].Id = DBContextMock.getFakeId(Case.SObjectType);
         }
 
         dbcontext.insertObjects(childCases, false);
@@ -269,13 +269,13 @@ public with sharing class DBContextTest {
 
     @IsTest
     static void test_mockup() {
-        IDBContext dbcontext = new DBContextMockup();
+        IDBContext dbcontext = new DBContextMock();
         dbcontext.insertObjects(new List<Account> { new Account() }, false);
         dbcontext.upsertObjects(new List<Account> { new Account() }, false);
-        dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        dbcontext.deleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        dbcontext.undeleteObjects(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
-        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMockup.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.deleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.undeleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
@@ -295,7 +295,7 @@ public with sharing class DBContextTest {
 
     @IsTest
     static void test_mockup_phantom_update() {
-        IDBContext dbcontext = new DBContextMockup();
+        IDBContext dbcontext = new DBContextMock();
 
         List<Contact> contacts = new List<Contact> {
             new Contact(LastName = 'Name 0'),
@@ -329,7 +329,7 @@ public with sharing class DBContextTest {
 
     @IsTest
     static void test_mockup_child_context() {
-        IDBContext dbcontext = new DBContextMockup();
+        IDBContext dbcontext = new DBContextMock();
 
         // pretend contact service created some contacts;
         IDBContext dbcontext_child1 = dbcontext.create();
@@ -368,7 +368,7 @@ public with sharing class DBContextTest {
     }
     @IsTest
     static void test_mockup_child_context2() {
-        IDBContext dbcontext = new DBContextMockup();
+        IDBContext dbcontext = new DBContextMock();
 
         // pretend contact service created some contacts;
         IDBContext dbcontext_child1 = dbcontext.create();
@@ -408,7 +408,7 @@ public with sharing class DBContextTest {
 
     @IsTest
     static void test_mockup_fake_ids() {
-        IDBContext dbcontext = new DBContextMockup();
+        IDBContext dbcontext = new DBContextMock();
 
         List<Account> accounts = new List<Account> {
             new Account(Name = 'Name 0'),
@@ -429,12 +429,12 @@ public with sharing class DBContextTest {
 
     @IsTest
     static void test_mockup_fake_ids2() {
-        Id accId1 = DBContextMockup.getFakeId(Account.SObjectType);
-        Id conId1 = DBContextMockup.getFakeId(Contact.SObjectType);
-        Id accId2 = DBContextMockup.getFakeId(Account.SObjectType);
-        Id conId2 = DBContextMockup.getFakeId(Contact.SObjectType);
-        Id accId3 = DBContextMockup.getFakeId(Account.SObjectType);
-        Id conId3 = DBContextMockup.getFakeId(Contact.SObjectType);
+        Id accId1 = DBContextMock.getFakeId(Account.SObjectType);
+        Id conId1 = DBContextMock.getFakeId(Contact.SObjectType);
+        Id accId2 = DBContextMock.getFakeId(Account.SObjectType);
+        Id conId2 = DBContextMock.getFakeId(Contact.SObjectType);
+        Id accId3 = DBContextMock.getFakeId(Account.SObjectType);
+        Id conId3 = DBContextMock.getFakeId(Contact.SObjectType);
 
         System.assertEquals('000zzzz00001', String.valueOf(accId1).substring(3, 15));
         System.assertEquals('000zzzz00002', String.valueOf(accId2).substring(3, 15));

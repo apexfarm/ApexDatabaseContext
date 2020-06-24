@@ -5,7 +5,7 @@
 This library is NOT an implementation of the *[Unit of Work](https://martinfowler.com/eaaCatalog/unitOfWork.html)* pattern, because it doesn't combine DML operations to the same sObject. But it still performs all DML operations as a unit in a command design pattern way. It has the following features:
 
 1. Easy to learn: similar APIs to the ones used with `Database` class.
-2. Easy to use: 
+2. Easy to use:
    - No need to maintain sObject relationship dependency.
    - Automatically resolve relationships to populate parent Ids.
 3. Easy to test: Provide [IDBContext Mockup](#idbcontext-mockup) for testing without permforming actual DMLs to the Database.
@@ -82,7 +82,7 @@ This implementaion is more towards a command design pattern, so it can support "
 ```java
 IDBContext dbcontext = new DBContext();
 dbcontext.insertObjects(accounts);
-dbcontext.updateObjects(accounts); // update the accounts as long as they 
+dbcontext.updateObjects(accounts); // update the accounts as long as they
                                    // were updated in a previsou statement
 ```
 
@@ -107,10 +107,10 @@ Child contexts don't have to be explicitly committed. `mainContext.commitObjects
 
 ### IDBContext Mockup
 
-DBContextMockup is an always-success IDBContext Implementation, no error will raised or returned. Extreme large fake ID number are assigned to the newly inserted sObjects. So the following could be possible:
+DBContextMock is an always-success IDBContext Implementation, no error will raised or returned. Extreme large fake ID number are assigned to the newly inserted sObjects. So the following could be possible:
 
 ```java
-IDBContext dbcontext = new DBContextMockup();
+IDBContext dbcontext = new DBContextMock();
 List<Account> accounts = ...; // 3 new accounts without Ids
 dbcontext.insertObjects(accounts);
 

@@ -30,7 +30,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public class DBContextMockup extends DBContext {
+public class DBContextMock extends DBContext {
     static Map<Schema.SObjectType, Indexer> objectIdIndexes { get; set; }
 
     class Indexer {
@@ -54,7 +54,7 @@ public class DBContextMockup extends DBContext {
     }
 
     public override IDBContext create() {
-        IDBContext context = new DBContextMockup();
+        IDBContext context = new DBContextMock();
         this.childContexts.add(context);
         return context;
     }
