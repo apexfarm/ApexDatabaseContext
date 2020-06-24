@@ -82,18 +82,9 @@ This implementaion is more towards a command design pattern, so it can support "
 ```java
 IDBContext dbcontext = new DBContext();
 dbcontext.insertObjects(accounts);
-dbcontext.updateObjects(accounts); // update the accounts even they are not saved to the database
+dbcontext.updateObjects(accounts); // update the accounts as long as they 
+                                   // were updated in a previsou statement
 ```
-
-### Singleton Context
-
-Please instantiate the IDBContext as a singleton, so it can be shared among service classes, trigger handlers etc. In the real world there is complexity around the order of DML invocation, such as the following classes can invoke DML statements in arbitrary orders:
-
-```
-1. Controller Class => 2. Service Class => 3. ProcessBuilder => 4. Trigger => 5. Service Class
-```
-
-With a singleton we can track the order of DML invocations provided by developers.
 
 ### Child Contexts
 
@@ -103,7 +94,8 @@ If some data have to be committed prior and can be committed standalone, please 
 IDBContext mainContext = new DBContext();
 mainContext.insertObjects(accounts);
 
-IDBContext childContext = mainContext.create(); // create child IDBContext
+// create a child IDBContext
+IDBContext childContext = mainContext.create();
 childContext.insertObjects(contacts);
 childContext.commitObjects();
 
@@ -121,12 +113,14 @@ DBContextMockup is an always-success IDBContext Implementation, no error will ra
 IDBContext dbcontext = new DBContextMockup();
 List<Account> accounts = ...; // 3 new accounts without Ids
 dbcontext.insertObjects(accounts);
+
 List<Contact> contacts = [SELECT Id FROM Contact LIMIT 3];
 for (Integer i = 0; i < 3; i++) {
     contacts[i].Account = accounts[i];
 }
-dbcontext.commitObjects();
+dbcontext.updateObjects(contacts);
 
+dbcontext.commitObjects();
 for (Integer i = 0; i < 3; i++) {
     System.assertEquals(accounts[i].Id, contacts[i].AccountId);
 }
