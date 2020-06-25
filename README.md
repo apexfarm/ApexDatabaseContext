@@ -31,11 +31,7 @@ public without sharing class ContactService {
     public List<Contact> doBusiness(List<Contact> contacts) {
         for (Contact con : contacts) {
             con.FirstName = 'First Name';
-            con.LastName = 'Last Name';
-            this.contactRepository.put(con, new List<Schema.SObjectField> {
-                Contact.FirstName,
-                Contact.LastName
-            });
+            this.contactRepository.put(con); // no need to provide field list on first update                    
 
             Account acc = new Account(
                 BillingCity = 'Dalian',
@@ -44,16 +40,18 @@ public without sharing class ContactService {
             this.accountRepository.add(acc);
 
             this.contactRepository.put(new Contact(
-                    Id = con.Id,            // new contact with same Id will be merged into previous update
-                    Account = acc           // new account without Id can also be used
+                    Id = con.Id,             // new contact with same Id will be merged into previous update
+                    Account = acc,           // new account without Id can also be used
+                    LastName = 'Last Name'
                 ), new List<Schema.SObjectField> {
-                    Contact.AccountId       // use Id field to indicate the above relationship
+                    Contact.AccountId,       // use Id field to indicate the above relationship
+                    Contact.LastName
                 });
         }
 
         // saving order matters: new accounts must have Ids before update contacts
-        this.accountRepository.save();      // allOrNone = true, won't save to DB
-        this.contactRepository.save(false); // allOrNone = false, won't save to DB
+        this.accountRepository.save();       // allOrNone = true, won't save to DB
+        this.contactRepository.save(false);  // allOrNone = false, won't save to DB
 
         IDBResult dbResult = dbcontext.commitObjects(); // call commit to save to DB
         List<DMLResult> results = dbResult.getErrorsForInsert(Contact.SObjectType);
@@ -66,7 +64,7 @@ public without sharing class ContactService {
 
 ### Phantom Updates
 
-This implementaion is more towards a command design pattern, so it can support "phantom" updates, such as:
+DBContext implementaion is more towards a command design pattern, so it can support "phantom" updates, such as:
 
 ```java
 IDBContext dbcontext = new DBContext();
