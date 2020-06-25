@@ -31,7 +31,7 @@ public without sharing class ContactService {
     public List<Contact> doBusiness(List<Contact> contacts) {
         for (Contact con : contacts) {
             con.FirstName = 'First Name';
-            this.contactRepository.put(con); // no need to provide field list on first update                    
+            this.contactRepository.put(con); // no need to provide field list on first update
 
             Account acc = new Account(
                 BillingCity = 'Dalian',
