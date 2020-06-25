@@ -50,10 +50,10 @@ public without sharing class ContactService {
         }
 
         // saving order matters: new accounts must have Ids before update contacts
-        this.accountRepository.save();       // allOrNone = true, won't save to DB
-        this.contactRepository.save(false);  // allOrNone = false, won't save to DB
+        this.accountRepository.save();       // save to DBContext only
+        this.contactRepository.save(false);  // allOrNone = false
 
-        IDBResult dbResult = dbcontext.commitObjects(); // call commit to save to DB
+        IDBResult dbResult = dbcontext.commitObjects(); // commit to save to Salesforce
         List<DMLResult> results = dbResult.getErrorsForInsert(Contact.SObjectType);
         return contacts;
     }
@@ -134,7 +134,7 @@ More than a wrapper around IDBContext. It gives developer controls of the order 
 | void put(SObject *obj*)                                      | First time put don't need to specify the `fields` parameter. |
 | void put(SObject *obj*, List\<Schema.SObjectField\> *fields*) | Subsequent put should provide the `fields` parameter, for performance considerations. |
 | void del(SObject *obj*)                                      |                                                              |
-| void save()                                                  |                                                              |
+| void save()                                                  | Save to the in memory DBContext only, not perform actual DMLs to Salesforce. |
 | void save(Boolean *allOrNone*)                               |                                                              |
 
 ### IDBContext & DBContext & DBContextMockup
