@@ -40,7 +40,7 @@ public without sharing class ContactService {
             this.accountRepository.add(acc);
 
             this.contactRepository.put(new Contact(
-                    Id = con.Id,             // new contact with same Id will be merged into previous update
+                    Id = con.Id,             // new contact with same Id will be merged
                     Account = acc,           // new account without Id can also be used
                     LastName = 'Last Name'
                 ), new List<Schema.SObjectField> {
