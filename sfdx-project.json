@@ -3,8 +3,8 @@
         {
             "path": "db-context",
             "package": "ApexDatabaseContext",
-            "versionName": "ver 1.1",
-            "versionNumber": "1.1.0.NEXT",
+            "versionName": "ver 1.4",
+            "versionNumber": "1.4.0.NEXT",
             "default": true
         }
     ],
@@ -12,7 +12,8 @@
     "sfdcLoginUrl": "https://login.salesforce.com",
     "sourceApiVersion": "48.0",
     "packageAliases": {
-        "ApexDBResult": "0Ho2v00000000GOCAY",
-        "ApexDBResult@1.0.0-1": "04t2v000007X3VDAA0"
+        "ApexDatabaseContext": "0Ho2v00000000GOCAY",
+        "ApexDatabaseContext@1.0.0-1": "04t2v000007X3VDAA0",
+        "ApexDatabaseContext@1.4.0-1": "04t2v000007X3wsAAC"
     }
 }

@@ -30,27 +30,15 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-public interface IDBContext {
-    IDBContext create();
+public interface IDBRepository {
+    IDBRepository config(Schema.SObjectType objectType);
+    IDBRepository config(IDBContext context);
 
-    void insertObjects(List<SObject> objects);
-    void insertObjects(List<SObject> objects, Boolean allOrNone);
-    void upsertObjects(List<SObject> objects);
-    void upsertObjects(List<SObject> objects, Boolean allOrNone);
-    void updateObjects(List<SObject> objects);
-    void updateObjects(List<SObject> objects, Boolean allOrNone);
-    void deleteObjects(List<SObject> objects);
-    void deleteObjects(List<SObject> objects, Boolean allOrNone);
-    void deleteObjects(List<Id> objectIds);
-    void deleteObjects(List<Id> objectIds, Boolean allOrNone);
-    void undeleteObjects(List<SObject> objects);
-    void undeleteObjects(List<SObject> objects, Boolean allOrNone);
-    void undeleteObjects(List<Id> objectIds);
-    void undeleteObjects(List<Id> objectIds, Boolean allOrNone);
-    void emptyRecycleBin(List<SObject> objects);
-    void emptyRecycleBin(List<SObject> objects, Boolean allOrNone);
-    void emptyRecycleBin(List<Id> objectIds);
-    void emptyRecycleBin(List<Id> objectIds, Boolean allOrNone);
-
-    IDBResult commitObjects();
+    List<SObject> get(String query);
+    void add(SObject obj);
+    void put(SObject obj);
+    void put(SObject obj, List<Schema.SObjectField> fields);
+    void del(SObject obj);
+    void save();
+    void save(Boolean allOrNone);
 }

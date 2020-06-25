@@ -58,9 +58,6 @@ public with sharing class DBContextTest {
         dbcontext.insertObjects(null);
         dbcontext.upsertObjects(null);
         dbcontext.updateObjects(null);
-        dbcontext.deleteObjects(null);
-        dbcontext.undeleteObjects(null);
-        dbcontext.emptyRecycleBin(null);
         dbcontext.commitObjects();
     }
 
@@ -73,6 +70,9 @@ public with sharing class DBContextTest {
         dbcontext.deleteObjects(new List<Account> {});
         dbcontext.undeleteObjects(new List<Account> {});
         dbcontext.emptyRecycleBin(new List<Account> {});
+        dbcontext.deleteObjects(new List<Id> {});
+        dbcontext.undeleteObjects(new List<Id> {});
+        dbcontext.emptyRecycleBin(new List<Id> {});
         dbcontext.commitObjects();
     }
 
@@ -85,6 +85,9 @@ public with sharing class DBContextTest {
         dbcontext.deleteObjects(new List<Account> {}, true);
         dbcontext.undeleteObjects(new List<Account> {}, true);
         dbcontext.emptyRecycleBin(new List<Account> {}, true);
+        dbcontext.deleteObjects(new List<Id> {}, true);
+        dbcontext.undeleteObjects(new List<Id> {}, true);
+        dbcontext.emptyRecycleBin(new List<Id> {}, true);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
@@ -117,6 +120,9 @@ public with sharing class DBContextTest {
         dbcontext.deleteObjects(new List<Account> {}, false);
         dbcontext.undeleteObjects(new List<Account> {}, false);
         dbcontext.emptyRecycleBin(new List<Account> {}, false);
+        dbcontext.deleteObjects(new List<Id> {}, false);
+        dbcontext.undeleteObjects(new List<Id> {}, false);
+        dbcontext.emptyRecycleBin(new List<Id> {}, false);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
@@ -137,21 +143,24 @@ public with sharing class DBContextTest {
         dbcontext.undeleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
         dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
         dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, true);
+        dbcontext.deleteObjects(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
+        dbcontext.undeleteObjects(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
+        dbcontext.emptyRecycleBin(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
         System.assertEquals(1, result.getErrorsForUpdate(Account.SObjectType).size());
         System.assertEquals(1, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(2, result.getErrorsForDelete(Account.SObjectType).size());
+        System.assertEquals(2, result.getErrorsForUndelete(Account.SObjectType).size());
+        System.assertEquals(2, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
 
         System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
         System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
         System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(2, result.getResultsForDelete(Account.SObjectType).size());
+        System.assertEquals(2, result.getResultsForUndelete(Account.SObjectType).size());
+        System.assertEquals(2, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
     }
 
     @IsTest
@@ -276,6 +285,9 @@ public with sharing class DBContextTest {
         dbcontext.deleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
         dbcontext.undeleteObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
         dbcontext.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, false);
+        dbcontext.deleteObjects(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
+        dbcontext.undeleteObjects(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
+        dbcontext.emptyRecycleBin(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
@@ -288,9 +300,9 @@ public with sharing class DBContextTest {
         System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
         System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
         System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(2, result.getResultsForDelete(Account.SObjectType).size());
+        System.assertEquals(2, result.getResultsForUndelete(Account.SObjectType).size());
+        System.assertEquals(2, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
     }
 
     @IsTest

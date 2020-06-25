@@ -1,5 +1,5 @@
-sfdx force:package:create --name ApexDBResult --description "Apex Database Context" --packagetype Unlocked --path apex-db-context --nonamespace
-sfdx force:package:version:create -p ApexDBResult -x --wait 10
+sfdx force:package:create --name ApexDatabaseContext --description "Apex Database Context" --packagetype Unlocked --path apex-db-context --nonamespace
+sfdx force:package:version:create -p ApexDatabaseContext -x --wait 10
 sfdx force:package:version:list
 sfdx force:package:version:promote -p <package id>
 sfdx force:package:version:report -p <package id>

@@ -64,11 +64,11 @@ public virtual class DBContext implements IDBContext {
         this.dmlDescriptors = new List<DMLDescriptor>();
     }
 
-    public List<IDBContext> childContexts() {
+    protected List<IDBContext> childContexts() {
         return this.childContexts;
     }
 
-    public List<DMLDescriptor> dmlDescriptors() {
+    protected List<DMLDescriptor> dmlDescriptors() {
         return this.dmlDescriptors;
     }
 
@@ -110,6 +110,14 @@ public virtual class DBContext implements IDBContext {
         register(DMLOperation.DO_DELETE, objects, allOrNone);
     }
 
+    public void deleteObjects(List<Id> objectIds) {
+        register(DMLOperation.DO_DELETE, objectIds, true);
+    }
+
+    public void deleteObjects(List<Id> objectIds, Boolean allOrNone) {
+        register(DMLOperation.DO_DELETE, objectIds, allOrNone);
+    }
+
     public void undeleteObjects(List<SObject> objects) {
         register(DMLOperation.DO_UNDELETE, objects, true);
     }
@@ -118,12 +126,28 @@ public virtual class DBContext implements IDBContext {
         register(DMLOperation.DO_UNDELETE, objects, allOrNone);
     }
 
+    public void undeleteObjects(List<Id> objectIds) {
+        register(DMLOperation.DO_UNDELETE, objectIds, true);
+    }
+
+    public void undeleteObjects(List<Id> objectIds, Boolean allOrNone) {
+        register(DMLOperation.DO_UNDELETE, objectIds, allOrNone);
+    }
+
     public void emptyRecycleBin(List<SObject> objects) {
         register(DMLOperation.DO_EMPTY_RECYCLE_BIN, objects, true);
     }
 
     public void emptyRecycleBin(List<SObject> objects, Boolean allOrNone) {
         register(DMLOperation.DO_EMPTY_RECYCLE_BIN, objects, allOrNone);
+    }
+
+    public void emptyRecycleBin(List<Id> objectIds) {
+        register(DMLOperation.DO_EMPTY_RECYCLE_BIN, objectIds, true);
+    }
+
+    public void emptyRecycleBin(List<Id> objectIds, Boolean allOrNone) {
+        register(DMLOperation.DO_EMPTY_RECYCLE_BIN, objectIds, allOrNone);
     }
 
     public virtual IDBResult commitObjects() {
@@ -139,14 +163,14 @@ public virtual class DBContext implements IDBContext {
     }
 
     protected virtual void commitContext(IDBContext context, IDBResult result) {
-        for (IDBContext childContext : context.childContexts()) {
+        for (IDBContext childContext : ((DBContext)context).childContexts()) {
             commitContext(childContext, result);
         }
 
-        for (DMLDescriptor dmlDescriptor : context.dmlDescriptors()) {
+        for (DMLDescriptor dmlDescriptor : ((DBContext)context).dmlDescriptors()) {
             commitObjects(dmlDescriptor, result);
         }
-        context.dmlDescriptors().clear();
+        ((DBContext)context).dmlDescriptors().clear();
     }
 
     protected virtual void commitObjects(DMLDescriptor dmlDescriptor, IDBResult result) {
@@ -193,7 +217,7 @@ public virtual class DBContext implements IDBContext {
             }
             when DO_DELETE {
                 if (dmlDescriptor.objectIds != null) {
-                    List<Database.DeleteResult> results = Database.delete(new List<Id>(dmlDescriptor.objectIds), dmlDescriptor.allOrNone);
+                    List<Database.DeleteResult> results = Database.delete(dmlDescriptor.objectIds, dmlDescriptor.allOrNone);
 
                     if (!dmlDescriptor.allOrNone) {
                         if (!dbResult.deleteResults.containsKey(dmlDescriptor.objectType)) {
@@ -205,7 +229,7 @@ public virtual class DBContext implements IDBContext {
             }
             when DO_UNDELETE {
                 if (dmlDescriptor.objectIds != null) {
-                    List<Database.UndeleteResult> results = Database.undelete(new List<Id>(dmlDescriptor.objectIds), dmlDescriptor.allOrNone);
+                    List<Database.UndeleteResult> results = Database.undelete(dmlDescriptor.objectIds, dmlDescriptor.allOrNone);
 
                     if (!dmlDescriptor.allOrNone) {
                         if (!dbResult.undeleteResults.containsKey(dmlDescriptor.objectType)) {
@@ -217,7 +241,7 @@ public virtual class DBContext implements IDBContext {
             }
             when DO_EMPTY_RECYCLE_BIN {
                 if (dmlDescriptor.objectIds != null && !dmlDescriptor.objectIds.isEmpty()) {
-                    List<Database.EmptyRecycleBinResult> results = Database.emptyRecycleBin(new List<Id>(dmlDescriptor.objectIds));
+                    List<Database.EmptyRecycleBinResult> results = Database.emptyRecycleBin(dmlDescriptor.objectIds);
 
                     if (!dmlDescriptor.allOrNone) {
                         if (!dbResult.emptyRecycleBinResults.containsKey(dmlDescriptor.objectType)) {
@@ -231,9 +255,16 @@ public virtual class DBContext implements IDBContext {
     }
 
     private void register(DMLOperation dmlOperation, List<SObject> objects, Boolean allOrNone) {
-        if (objects != null) {
-            Schema.SObjectType objectType = objects.getSObjectType();
+        if (objects != null && !objects.isEmpty()) {
+            Schema.SObjectType objectType = objects[0].getSObjectType();
             this.dmlDescriptors.add(new DMLDescriptor(dmlOperation, objectType, objects, allOrNone));
+        }
+    }
+
+    private void register(DMLOperation dmlOperation, List<Id> objectIds, Boolean allOrNone) {
+        if (objectIds != null && !objectIds.isEmpty()) {
+            Schema.SObjectType objectType = objectIds[0].getSobjectType();
+            this.dmlDescriptors.add(new DMLDescriptor(dmlOperation, objectType, objectIds, allOrNone));
         }
     }
 
@@ -251,9 +282,24 @@ public virtual class DBContext implements IDBContext {
         public Boolean allOrNone { get; set; }
         public Schema.SObjectType objectType { get; set; }
         public List<SObject> objects { get; set; }
-        public Set<Id> objectIds { get; set; }
+        public List<Id> objectIds { get; set; }
         List<Schema.SObjectField> relationshipFields { get; set; }
         List<String> relationshipNames { get; set; }
+
+        DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<Id> objectIds, Boolean allOrNone) {
+            this.dmlOperation = dmlOperation;
+            this.objectType = objectType;
+            switch on dmlOperation {
+                when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
+                    this.objectIds = objectIds;
+                }
+            }
+            this.allOrNone = allOrNone;
+
+            setRelationshipFields(this.objectType);
+            this.relationshipFields = relationshipFieldCache.get(this.objectType);
+            this.relationshipNames = relationshipNameCache.get(this.objectType);
+        }
 
         DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<SObject> objects, Boolean allOrNone) {
             this.dmlOperation = dmlOperation;
@@ -263,7 +309,7 @@ public virtual class DBContext implements IDBContext {
                     this.objects = objects;
                 }
                 when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
-                    this.objectIds = new Map<Id, SObject>(objects).keySet();
+                    this.objectIds = new List<Id>((new Map<Id, SObject>(objects)).keySet());
                 }
             }
             this.allOrNone = allOrNone;
