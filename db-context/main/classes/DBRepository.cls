@@ -126,4 +126,21 @@ public virtual class DBRepository implements IDBRepository {
             this.deletedObjectIds = new Set<Id>();
         }
     }
+
+    public void save(Database.DMLOptions dmlOptions) {
+        if (!this.insertedObjects.isEmpty()) {
+            this.dbcontext.insertObjects(this.insertedObjects, dmlOptions);
+            this.insertedObjects = new List<SObject>();
+        }
+
+        if (!this.updatedObjects.isEmpty()) {
+            this.dbcontext.updateObjects(this.updatedObjects.values(), dmlOptions);
+            this.updatedObjects = new Map<Id, SObject>();
+        }
+
+        if (!this.deletedObjectIds.isEmpty()) {
+            this.dbcontext.deleteObjects(new List<Id>(this.deletedObjectIds), dmlOptions.optAllOrNone == true);
+            this.deletedObjectIds = new Set<Id>();
+        }
+    }
 }

@@ -35,10 +35,12 @@ public interface IDBContext {
 
     void insertObjects(List<SObject> objects);
     void insertObjects(List<SObject> objects, Boolean allOrNone);
+    void insertObjects(List<SObject> objects, Database.DMLOptions dmlOptions);
     void upsertObjects(List<SObject> objects);
     void upsertObjects(List<SObject> objects, Boolean allOrNone);
     void updateObjects(List<SObject> objects);
     void updateObjects(List<SObject> objects, Boolean allOrNone);
+    void updateObjects(List<SObject> objects, Database.DMLOptions dmlOptions);
     void deleteObjects(List<SObject> objects);
     void deleteObjects(List<SObject> objects, Boolean allOrNone);
     void deleteObjects(List<Id> objectIds);

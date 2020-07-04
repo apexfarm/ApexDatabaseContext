@@ -77,19 +77,17 @@ public class DBContextMock extends DBContext {
                     for (SObject obj : dmlDescriptor.objects) {
                         if (obj.Id == null) {
                             obj.Id = getFakeId(dmlDescriptor.objectType);
-                            if (!dmlDescriptor.allOrNone) {
-                                dmlResults.add(new DMLResult(obj.Id, true, true));
-                            }
-                        } else {
-                            if (!dmlDescriptor.allOrNone) {
-                                dmlResults.add(new DMLResult(obj.Id, true, false));
-                            }
+                        }
+                        if (dmlDescriptor.allOrNone == false ||
+                                (dmlDescriptor.dmlOptions != null
+                                && dmlDescriptor.dmlOptions.OptAllOrNone == false)) {
+                            dmlResults.add(new DMLResult(obj.Id, true, true));
                         }
                     }
                 }
             }
             when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
-                if (dmlDescriptor.objectIds != null && !dmlDescriptor.allOrNone) {
+                if (dmlDescriptor.allOrNone == false && dmlDescriptor.objectIds != null) {
                     List<DMLResult> dmlResults = dbResult.getDMLResults(
                         dmlDescriptor.objectType, dmlDescriptor.dmlOperation);
                     for (Id objId : dmlDescriptor.objectIds) {

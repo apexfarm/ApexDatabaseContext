@@ -41,4 +41,5 @@ public interface IDBRepository {
     void del(SObject obj);
     void save();
     void save(Boolean allOrNone);
+    void save(Database.DMLOptions dmlOptions);
 }
