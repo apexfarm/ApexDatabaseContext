@@ -80,18 +80,25 @@ public with sharing class DBRepositoryTest {
             Account account = new Account();
             accountRepository.add(account);
 
-            Contact contact = new Contact();
-            contactRepository.add(contact);
+            contactRepository.add(new Contact());
+
+            contactRepository.del(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            ));
         }
+
         accountRepository.save(false);
-        contactRepository.save(false);
+        Database.DMLOptions dmlOptions = new Database.DMLOptions();
+        contactRepository.save(dmlOptions);
 
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(10, result.getErrorsForInsert(Account.SObjectType).size());
         System.assertEquals(10, result.getErrorsForInsert(Contact.SObjectType).size());
+        System.assertEquals(10, result.getErrorsForDelete(Contact.SObjectType).size());
         System.assertEquals(10, result.getResultsForInsert(Account.SObjectType).size());
         System.assertEquals(10, result.getResultsForInsert(Contact.SObjectType).size());
+        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
     }
 
     @IsTest
@@ -107,21 +114,29 @@ public with sharing class DBRepositoryTest {
                 Id = DBContextMock.getFakeId(Account.SObjectType));
             accountRepository.put(account);
 
-            Contact contact = new Contact(
+            contactRepository.put(new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType),
                 Account = account
-            );
-            contactRepository.put(contact);
+            ));
+
+            contactRepository.del(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            ));
         }
+
         accountRepository.save(false);
-        contactRepository.save(false);
+        Database.DMLOptions dmlOptions = new Database.DMLOptions();
+        dmlOptions.optAllOrNone = false;
+        contactRepository.save(dmlOptions);
 
         IDBResult result = dbcontext.commitObjects();
 
         System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
         System.assertEquals(0, result.getErrorsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(0, result.getErrorsForDelete(Contact.SObjectType).size());
         System.assertEquals(10, result.getResultsForUpdate(Account.SObjectType).size());
         System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
     }
 
     @IsTest

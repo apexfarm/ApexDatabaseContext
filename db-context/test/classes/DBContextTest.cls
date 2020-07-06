@@ -164,6 +164,21 @@ public with sharing class DBContextTest {
     }
 
     @IsTest
+    static void test_partial_dmloptions() {
+        IDBContext dbcontext = new DBContext();
+        Database.DMLOptions dmlOptions = new Database.DMLOptions();
+        dbcontext.insertObjects(new List<Account> { new Account() }, dmlOptions);
+        dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, dmlOptions);
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getErrorsForUpdate(Account.SObjectType).size());
+
+        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
+        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
+    }
+
+    @IsTest
     static void test_partial_one_object_list_child_context() {
         IDBContext dbcontext = new DBContext();
         IDBContext childContext1 = dbcontext.create();

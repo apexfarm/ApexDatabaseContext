@@ -86,6 +86,10 @@ public virtual class DBContext implements IDBContext {
         register(DMLOperation.DO_INSERT, objects, allOrNone);
     }
 
+    public void insertObjects(List<SObject> objects, Database.DMLOptions dmlOptions) {
+        register(DMLOperation.DO_INSERT, objects, dmlOptions);
+    }
+
     public void upsertObjects(List<SObject> objects) {
         register(DMLOperation.DO_UPSERT, objects, true);
     }
@@ -100,6 +104,10 @@ public virtual class DBContext implements IDBContext {
 
     public void updateObjects(List<SObject> objects, Boolean allOrNone) {
         register(DMLOperation.DO_UPDATE, objects, allOrNone);
+    }
+
+    public void updateObjects(List<SObject> objects, Database.DMLOptions dmlOptions) {
+        register(DMLOperation.DO_UPDATE, objects, dmlOptions);
     }
 
     public void deleteObjects(List<SObject> objects) {
@@ -179,9 +187,17 @@ public virtual class DBContext implements IDBContext {
             when DO_INSERT {
                 if (dmlDescriptor.objects != null) {
                     dmlDescriptor.assignParentIds();
-                    List<Database.SaveResult> results = Database.update(dmlDescriptor.objects, dmlDescriptor.allOrNone);
 
-                    if (!dmlDescriptor.allOrNone) {
+                    List<Database.SaveResult> results;
+                    if (dmlDescriptor.dmlOptions != null) {
+                        results = Database.insert(dmlDescriptor.objects, dmlDescriptor.dmlOptions);
+                    } else {
+                        results = Database.insert(dmlDescriptor.objects, dmlDescriptor.allOrNone);
+                    }
+
+                    if (dmlDescriptor.allOrNone == false || (dmlDescriptor.dmlOptions != null
+                        && dmlDescriptor.dmlOptions.optAllOrNone != true)) {
+
                         if (!dbResult.insertResults.containsKey(dmlDescriptor.objectType)) {
                             dbResult.insertResults.put(dmlDescriptor.objectType, new List<Database.SaveResult>());
                         }
@@ -205,9 +221,17 @@ public virtual class DBContext implements IDBContext {
             when DO_UPDATE {
                 if (dmlDescriptor.objects != null) {
                     dmlDescriptor.assignParentIds();
-                    List<Database.SaveResult> results = Database.update(dmlDescriptor.objects, dmlDescriptor.allOrNone);
 
-                    if (!dmlDescriptor.allOrNone) {
+                    List<Database.SaveResult> results;
+                    if (dmlDescriptor.dmlOptions != null) {
+                        results = Database.update(dmlDescriptor.objects, dmlDescriptor.dmlOptions);
+                    } else {
+                        results = Database.update(dmlDescriptor.objects, dmlDescriptor.allOrNone);
+                    }
+
+                    if (dmlDescriptor.allOrNone == false || (dmlDescriptor.dmlOptions != null
+                        && dmlDescriptor.dmlOptions.optAllOrNone != true)) {
+
                         if (!dbResult.updateResults.containsKey(dmlDescriptor.objectType)) {
                             dbResult.updateResults.put(dmlDescriptor.objectType, new List<Database.SaveResult>());
                         }
@@ -254,6 +278,13 @@ public virtual class DBContext implements IDBContext {
         }
     }
 
+    private void register(DMLOperation dmlOperation, List<SObject> objects, Database.DMLOptions dmlOptions) {
+        if (objects != null && !objects.isEmpty()) {
+            Schema.SObjectType objectType = objects[0].getSObjectType();
+            this.dmlDescriptors.add(new DMLDescriptor(dmlOperation, objectType, objects, dmlOptions));
+        }
+    }
+
     private void register(DMLOperation dmlOperation, List<SObject> objects, Boolean allOrNone) {
         if (objects != null && !objects.isEmpty()) {
             Schema.SObjectType objectType = objects[0].getSObjectType();
@@ -280,30 +311,26 @@ public virtual class DBContext implements IDBContext {
     public virtual class DMLDescriptor {
         public DMLOperation dmlOperation { get; set; }
         public Boolean allOrNone { get; set; }
+        public Database.DMLOptions dmlOptions { get; set; }
         public Schema.SObjectType objectType { get; set; }
+
         public List<SObject> objects { get; set; }
         public List<Id> objectIds { get; set; }
+
         List<Schema.SObjectField> relationshipFields { get; set; }
         List<String> relationshipNames { get; set; }
 
-        DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<Id> objectIds, Boolean allOrNone) {
+
+        DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType) {
             this.dmlOperation = dmlOperation;
             this.objectType = objectType;
-            switch on dmlOperation {
-                when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
-                    this.objectIds = objectIds;
-                }
-            }
-            this.allOrNone = allOrNone;
-
             setRelationshipFields(this.objectType);
             this.relationshipFields = relationshipFieldCache.get(this.objectType);
             this.relationshipNames = relationshipNameCache.get(this.objectType);
         }
 
         DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<SObject> objects, Boolean allOrNone) {
-            this.dmlOperation = dmlOperation;
-            this.objectType = objectType;
+            this(dmlOperation, objectType);
             switch on dmlOperation {
                 when DO_INSERT, DO_UPDATE, DO_UPSERT {
                     this.objects = objects;
@@ -313,10 +340,27 @@ public virtual class DBContext implements IDBContext {
                 }
             }
             this.allOrNone = allOrNone;
+        }
 
-            setRelationshipFields(this.objectType);
-            this.relationshipFields = relationshipFieldCache.get(this.objectType);
-            this.relationshipNames = relationshipNameCache.get(this.objectType);
+        DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<SObject> objects, Database.DMLOptions dmlOptions) {
+            this(dmlOperation, objectType);
+            switch on dmlOperation {
+                when DO_INSERT, DO_UPDATE, DO_UPSERT {
+                    this.objects = objects;
+                }
+            }
+            this.dmlOptions = dmlOptions;
+        }
+
+
+        DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<Id> objectIds, Boolean allOrNone) {
+            this(dmlOperation, objectType);
+            switch on dmlOperation {
+                when DO_DELETE, DO_UNDELETE, DO_EMPTY_RECYCLE_BIN {
+                    this.objectIds = objectIds;
+                }
+            }
+            this.allOrNone = allOrNone;
         }
 
         public virtual void assignParentIds() {
