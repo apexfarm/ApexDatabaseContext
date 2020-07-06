@@ -167,7 +167,6 @@ public with sharing class DBContextTest {
     static void test_partial_dmloptions() {
         IDBContext dbcontext = new DBContext();
         Database.DMLOptions dmlOptions = new Database.DMLOptions();
-        dmlOptions.OptAllOrNone = false;
         dbcontext.insertObjects(new List<Account> { new Account() }, dmlOptions);
         dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, dmlOptions);
         IDBResult result = dbcontext.commitObjects();

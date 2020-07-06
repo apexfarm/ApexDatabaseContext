@@ -89,7 +89,6 @@ public with sharing class DBRepositoryTest {
 
         accountRepository.save(false);
         Database.DMLOptions dmlOptions = new Database.DMLOptions();
-        dmlOptions.OptAllOrNone = false;
         contactRepository.save(dmlOptions);
 
         IDBResult result = dbcontext.commitObjects();

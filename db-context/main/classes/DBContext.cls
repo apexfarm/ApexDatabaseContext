@@ -195,9 +195,8 @@ public virtual class DBContext implements IDBContext {
                         results = Database.insert(dmlDescriptor.objects, dmlDescriptor.allOrNone);
                     }
 
-                    if (dmlDescriptor.allOrNone == false ||
-                        (dmlDescriptor.dmlOptions != null
-                        && dmlDescriptor.dmlOptions.OptAllOrNone == false)) {
+                    if (dmlDescriptor.allOrNone == false || (dmlDescriptor.dmlOptions != null
+                        && dmlDescriptor.dmlOptions.OptAllOrNone != true)) {
 
                         if (!dbResult.insertResults.containsKey(dmlDescriptor.objectType)) {
                             dbResult.insertResults.put(dmlDescriptor.objectType, new List<Database.SaveResult>());
@@ -230,9 +229,8 @@ public virtual class DBContext implements IDBContext {
                         results = Database.update(dmlDescriptor.objects, dmlDescriptor.allOrNone);
                     }
 
-                    if (dmlDescriptor.allOrNone == false ||
-                        (dmlDescriptor.dmlOptions != null
-                        && dmlDescriptor.dmlOptions.OptAllOrNone == false)) {
+                    if (dmlDescriptor.allOrNone == false || (dmlDescriptor.dmlOptions != null
+                        && dmlDescriptor.dmlOptions.OptAllOrNone != true)) {
 
                         if (!dbResult.updateResults.containsKey(dmlDescriptor.objectType)) {
                             dbResult.updateResults.put(dmlDescriptor.objectType, new List<Database.SaveResult>());

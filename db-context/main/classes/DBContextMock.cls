@@ -78,9 +78,8 @@ public class DBContextMock extends DBContext {
                         if (obj.Id == null) {
                             obj.Id = getFakeId(dmlDescriptor.objectType);
                         }
-                        if (dmlDescriptor.allOrNone == false ||
-                                (dmlDescriptor.dmlOptions != null
-                                && dmlDescriptor.dmlOptions.OptAllOrNone == false)) {
+                        if (dmlDescriptor.allOrNone == false || (dmlDescriptor.dmlOptions != null
+                            && dmlDescriptor.dmlOptions.OptAllOrNone != true)) {
                             dmlResults.add(new DMLResult(obj.Id, true, true));
                         }
                     }
