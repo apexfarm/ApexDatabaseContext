@@ -1,19 +1,12 @@
 # Apex Database Context
 
-![](https://img.shields.io/badge/version-1.4-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
+![](https://img.shields.io/badge/version-1.4.1-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 Bring Unit of Work and Repository pattern into Apex world.
 
-### Installation
-
-| Environment           | Install Link                                                 | Version |
-| --------------------- | ------------------------------------------------------------ | ------- |
-| Production, Developer | <a target="_blank" href="https://login.salesforce.com/packaging/installPackage.apexp?p0=04t2v000007X3wsAAC"><img src="docs/images/deploy-button.png"></a> | ver 1.4 |
-| Sandbox               | <a target="_blank" href="https://test.salesforce.com/packaging/installPackage.apexp?p0=04t2v000007X3wsAAC"><img src="docs/images/deploy-button.png"></a> | ver 1.4 |
-
 ## Use DBRepository
 
-Use DBRepository to manage differenct sObjects context separatly.
+Use DBRepository to manage different sObjects context separatly.
 
 ```java
 public without sharing class ContactService {
@@ -136,6 +129,7 @@ More than a wrapper around IDBContext. It gives developer controls of the order 
 | void del(SObject *obj*)                                      |                                                              |
 | void save()                                                  | Save to the in memory DBContext only, not perform actual DMLs to Salesforce. |
 | void save(Boolean *allOrNone*)                               |                                                              |
+| void save(Database.DMLOptions *options*)                     |                                                              |
 
 ### IDBContext & DBContext & DBContextMockup
 
@@ -146,10 +140,12 @@ Please check Salesforce [Database Class](https://developer.salesforce.com/docs/a
 | IDBContext create();                                         |
 | void insertObjects(List\<SObject\> *objects*)                |
 | void insertObjects(List\<SObject\> *objects*, Boolean *allOrNone*) |
+| void insertObjects(List\<SObject\> *objects*, Database.DMLOptions *options*) |
 | void upsertObjects(List\<SObject\> *objects*)                |
 | void upsertObjects(List\<SObject\> *objects*, Boolean *allOrNone*) |
 | void updateObjects(List\<SObject\> *objects*)                |
 | void updateObjects(List\<SObject\> *objects*, Boolean *allOrNone*) |
+| void updateObjects(List\<SObject\> *objects*, Database.DMLOptions *options*) |
 | void deleteObjects(List\<SObject\> *objects*)                |
 | void deleteObjects(List\<SObject\> *objects*, Boolean *allOrNone*) |
 | void undeleteObjects(List\<SObject\> *objects*)              |
@@ -159,7 +155,7 @@ Please check Salesforce [Database Class](https://developer.salesforce.com/docs/a
 
 ### IDBResult
 
-Use the following methods to get all results of a particular operation against an SObjectType. **Note**: Results will only be available for dml operations with `allOrNone` equals to `true`.
+Use the following methods to get all results of a particular operation against an SObjectType. **Note**: Results will only be available for dml operations with `allOrNone == false` or `dmlOptions != null & dmlOptions.optAllOrNone != true`.
 
 
 | Methods                                                      |
