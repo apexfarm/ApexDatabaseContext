@@ -45,8 +45,9 @@ public virtual class DBContext implements IDBContext {
             List<String> relationshipNames = new List<String>();
 
             for (Schema.SObjectField field : objectType.getDescribe().fields.getMap().values()) {
+                Schema.DescribeFieldResult dfr = field.getDescribe();
                 String relationshipName = field.getDescribe().getRelationshipName();
-                if (relationshipName != null) {
+                if (relationshipName != null && (dfr.isCreateable() || dfr.isUpdateable())) {
                     relationshipFields.add(field);
                     relationshipNames.add(relationshipName);
                 }
