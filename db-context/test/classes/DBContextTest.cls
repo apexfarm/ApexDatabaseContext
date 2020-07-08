@@ -289,6 +289,8 @@ public with sharing class DBContextTest {
     static void test_no_assertions() {
         new DMLResult(null, true, true);
         IDBContext dbcontext = new DBContext();
+        IDBResult dbresult = dbcontext.commitObjects();
+        dbresult.rollback();
     }
 
     @IsTest

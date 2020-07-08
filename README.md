@@ -110,7 +110,7 @@ DBContextMockup can also be used with DBRepository together:
 
 ```java
 IDBContext dbcontext = new DBContextMock();
-IDBRepository repository = new DBRepository().config(dbcontext).config(Account.SObjectType);
+IDBRepository repository = new DBRepository().config(dbcontext);
 ```
 
 ## APIs
@@ -153,7 +153,11 @@ Please check Salesforce [Database Class](https://developer.salesforce.com/docs/a
 | void emptyRecycleBin(List\<SObject\> *objects*)              |
 | IDBResult commitObjects()                                    |
 
-### IDBResult
+### IDBResult
+
+| Methods          |
+| ---------------- |
+| void rollback(); |
 
 Use the following methods to get all results of a particular operation against an SObjectType. **Note**: Results will only be available for dml operations with `allOrNone == false` or `dmlOptions != null & dmlOptions.optAllOrNone != true`.
 

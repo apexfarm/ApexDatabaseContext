@@ -62,26 +62,42 @@ public virtual class DBRepository implements IDBRepository {
     }
 
     public virtual void add(SObject obj) {
+        if (obj == null) {
+            return;
+        }
         this.insertedObjects.add(obj);
     }
 
     public virtual void put(SObject obj) {
+        if (obj == null || obj.Id == null) {
+            return;
+        }
+
         if (!this.updatedObjects.containsKey(obj.Id)) {
             this.updatedObjects.put(obj.Id, obj);
             return;
         }
 
-        SObject updatedObject = this.updatedObjects.get(obj.Id);
-        if (updatedObject != obj) {
+        SObject cacheObj = this.updatedObjects.get(obj.Id);
+        if (cacheObj != obj) {
             for (Schema.SObjectField field : obj.getSObjectType().getDescribe().fields.getMap().values()) {
                 if (obj.isSet(field)) {
-                    updatedObject.put(field, obj.get(field));
+                    cacheObj.put(field, obj.get(field));
                 }
             }
         }
     }
 
     public virtual void put(SObject obj, List<Schema.SObjectField> fields) {
+        if (obj == null || obj.Id == null) {
+            return;
+        }
+
+        if (fields == null) {
+            put(obj);
+            return;
+        }
+
         if (!this.updatedObjects.containsKey(obj.Id)) {
             this.updatedObjects.put(obj.Id, obj);
             return;
@@ -103,6 +119,9 @@ public virtual class DBRepository implements IDBRepository {
     }
 
     public virtual void del(SObject obj) {
+        if (obj == null) {
+            return;
+        }
         this.deletedObjectIds.add(obj.Id);
     }
 

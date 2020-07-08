@@ -114,6 +114,11 @@ public class DBContextMock extends DBContext {
             emptyRecycleBinResults = new Map<Schema.SObjectType, List<DMLResult>>();
         }
 
+
+        public void rollback() {
+
+        }
+
         private List<DMLResult> getDMLResults(Schema.SObjectType objectType, DMLOperation dmlOperation) {
             List<DMLResult> dmlResults;
             switch on dmlOperation {
@@ -158,13 +163,11 @@ public class DBContextMock extends DBContext {
         }
 
         public List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType) {
-            List<DMLResult> dmlResults = new List<DMLResult>();
-            return dmlResults;
+            return new List<DMLResult>();
         }
 
         public List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType) {
@@ -184,27 +187,51 @@ public class DBContextMock extends DBContext {
         }
 
         public List<DMLResult> getResultsForInsert(Schema.SObjectType objectType) {
-            return this.insertResults.get(objectType);
+            List<DMLResult> results = this.insertResults.get(objectType);
+            if (results == null) {
+                return new List<DMLResult>();
+            }
+            return results;
         }
 
         public List<DMLResult> getResultsForUpdate(Schema.SObjectType objectType) {
-            return this.updateResults.get(objectType);
+            List<DMLResult> results = this.updateResults.get(objectType);
+            if (results == null) {
+                return new List<DMLResult>();
+            }
+            return results;
         }
 
         public List<DMLResult> getResultsForUpsert(Schema.SObjectType objectType) {
-            return this.upsertResults.get(objectType);
+            List<DMLResult> results = this.upsertResults.get(objectType);
+            if (results == null) {
+                return new List<DMLResult>();
+            }
+            return results;
         }
 
         public List<DMLResult> getResultsForDelete(Schema.SObjectType objectType) {
-            return this.deleteResults.get(objectType);
+            List<DMLResult> results = this.deleteResults.get(objectType);
+            if (results == null) {
+                return new List<DMLResult>();
+            }
+            return results;
         }
 
         public List<DMLResult> getResultsForUndelete(Schema.SObjectType objectType) {
-            return this.undeleteResults.get(objectType);
+            List<DMLResult> results = this.undeleteResults.get(objectType);
+            if (results == null) {
+                return new List<DMLResult>();
+            }
+            return results;
         }
 
         public List<DMLResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) {
-            return this.emptyRecycleBinResults.get(objectType);
+            List<DMLResult> results = this.emptyRecycleBinResults.get(objectType);
+            if (results == null) {
+                return new List<DMLResult>();
+            }
+            return results;
         }
     }
 }

@@ -159,8 +159,8 @@ public virtual class DBContext implements IDBContext {
     }
 
     public virtual IDBResult commitObjects() {
-        System.Savepoint sp = Database.setSavePoint();
-        DBResult result = new DBResult();
+        Savepoint sp = Database.setSavePoint();
+        DBResult result = new DBResult(sp);
 		try {
             commitContext(this, result);
 		} catch (Exception ex) {
@@ -380,6 +380,7 @@ public virtual class DBContext implements IDBContext {
     }
 
     public class DBResult implements IDBResult {
+        Savepoint sp { get; set; }
         public Map<Schema.SObjectType, List<Database.SaveResult>> insertResults { get; set; }
         public Map<Schema.SObjectType, List<Database.SaveResult>> updateResults { get; set; }
         public Map<Schema.SObjectType, List<Database.UpsertResult>> upsertResults { get; set; }
@@ -394,6 +395,14 @@ public virtual class DBContext implements IDBContext {
             deleteResults = new Map<Schema.SObjectType, List<Database.DeleteResult>>();
             undeleteResults = new Map<Schema.SObjectType, List<Database.UndeleteResult>>();
             emptyRecycleBinResults = new Map<Schema.SObjectType, List<Database.EmptyRecycleBinResult>>();
+        }
+
+        DBResult(Savepoint sp) {
+            this.sp = sp;
+        }
+
+        public void rollback() {
+            Database.rollback(sp);
         }
 
         public List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType) {

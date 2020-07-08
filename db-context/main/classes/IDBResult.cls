@@ -31,6 +31,8 @@
  */
 
 public interface IDBResult {
+    void rollback();
+
     List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType);
     List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType);
     List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType);
