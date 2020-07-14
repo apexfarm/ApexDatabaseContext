@@ -32,28 +32,23 @@
 
 public virtual class DBContext implements IDBContext {
     static Map<Schema.SObjectType, List<Schema.SObjectField>> relationshipFieldCache { get; set; }
-    static Map<Schema.SObjectType, List<String>> relationshipNameCache { get; set; }
 
     static {
         relationshipFieldCache = new Map<Schema.SObjectType, List<Schema.SObjectField>>();
-        relationshipNameCache = new Map<Schema.SObjectType, List<String>>();
     }
 
     static void setRelationshipFields(Schema.SObjectType objectType) {
         if (!relationshipFieldCache.containsKey(objectType)) {
             List<Schema.SObjectField> relationshipFields = new List<Schema.SObjectField>();
-            List<String> relationshipNames = new List<String>();
 
             for (Schema.SObjectField field : objectType.getDescribe().fields.getMap().values()) {
                 Schema.DescribeFieldResult dfr = field.getDescribe();
                 String relationshipName = field.getDescribe().getRelationshipName();
                 if (relationshipName != null && (dfr.isCreateable() || dfr.isUpdateable())) {
                     relationshipFields.add(field);
-                    relationshipNames.add(relationshipName);
                 }
             }
             relationshipFieldCache.put(objectType, relationshipFields);
-            relationshipNameCache.put(objectType, relationshipNames);
         }
     }
 
@@ -319,15 +314,12 @@ public virtual class DBContext implements IDBContext {
         public List<Id> objectIds { get; set; }
 
         List<Schema.SObjectField> relationshipFields { get; set; }
-        List<String> relationshipNames { get; set; }
-
 
         DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType) {
             this.dmlOperation = dmlOperation;
             this.objectType = objectType;
             setRelationshipFields(this.objectType);
             this.relationshipFields = relationshipFieldCache.get(this.objectType);
-            this.relationshipNames = relationshipNameCache.get(this.objectType);
         }
 
         DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<SObject> objects, Boolean allOrNone) {
@@ -367,13 +359,17 @@ public virtual class DBContext implements IDBContext {
         public virtual void assignParentIds() {
             for (Integer i = 0; i < this.relationshipFields.size(); ++i) {
                 Schema.SObjectField parentIdField = this.relationshipFields[i];
-                String relationshipName = this.relationshipNames[i];
 
                 for (SObject obj : this.objects) {
-                    if (obj.getSObject(relationshipName) != null &&
-                        (obj.get(parentIdField) == null || obj.get(parentIdField) != obj.getSObject(relationshipName).Id)
-                    ) {
-                        obj.put(parentIdField, obj.getSObject(relationshipName).Id);
+                    try {
+                        SObject parentObj = obj.getSObject(parentIdField);
+                        if (parentObj != null
+                            && (obj.get(parentIdField) == null
+                            || obj.get(parentIdField) != parentObj.Id)) {
+                            obj.put(parentIdField, parentObj.Id);
+                        }
+                    } catch (SObjectException ex) {
+
                     }
                 }
             }

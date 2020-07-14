@@ -54,21 +54,21 @@ public virtual class DBRepository implements IDBRepository {
         return this;
     }
 
-    public virtual List<SObject> get(String query) {
+    public virtual List<SObject> fetch(String query) {
         if (String.isNotBlank(query)) {
             return Database.query(String.escapeSingleQuotes(query));
         }
         return new List<SObject>();
     }
 
-    public virtual void add(SObject obj) {
+    public virtual void create(SObject obj) {
         if (obj == null) {
             return;
         }
         this.insertedObjects.add(obj);
     }
 
-    public virtual void put(SObject obj) {
+    public virtual void modify(SObject obj) {
         if (obj == null || obj.Id == null) {
             return;
         }
@@ -88,13 +88,13 @@ public virtual class DBRepository implements IDBRepository {
         }
     }
 
-    public virtual void put(SObject obj, List<Schema.SObjectField> fields) {
+    public virtual void modify(SObject obj, List<Schema.SObjectField> fields) {
         if (obj == null || obj.Id == null) {
             return;
         }
 
         if (fields == null) {
-            put(obj);
+            modify(obj);
             return;
         }
 
@@ -118,7 +118,7 @@ public virtual class DBRepository implements IDBRepository {
         }
     }
 
-    public virtual void del(SObject obj) {
+    public virtual void remove(SObject obj) {
         if (obj == null) {
             return;
         }

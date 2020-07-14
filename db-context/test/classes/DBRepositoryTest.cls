@@ -52,11 +52,11 @@ public with sharing class DBRepositoryTest {
         IDBContext dbcontext = new DBContextMock();
         IDBRepository accountRepository = new DBRepository().config(dbcontext);
 
-        accountRepository.add(null);
-        accountRepository.put(null);
-        accountRepository.put(null, null);
-        accountRepository.put(new Account(), null);
-        accountRepository.del(null);
+        accountRepository.create(null);
+        accountRepository.modify(null);
+        accountRepository.modify(null, null);
+        accountRepository.modify(new Account(), null);
+        accountRepository.remove(null);
 
         accountRepository.save(false);
         IDBResult result = dbcontext.commitObjects();
@@ -81,12 +81,12 @@ public with sharing class DBRepositoryTest {
             .config(dbcontext).config(Contact.SObjectType);
 
         List<SObject> accounts;
-        accounts = accountRepository.get(null);
-        accounts = accountRepository.get('SELECT Id FROM Account LIMIT 10');
+        accounts = accountRepository.fetch(null);
+        accounts = accountRepository.fetch('SELECT Id FROM Account LIMIT 10');
 
         List<SObject> contacts;
-        contacts = contactRepository.get(null);
-        contacts = contactRepository.get('SELECT Id FROM Contact LIMIT 10');
+        contacts = contactRepository.fetch(null);
+        contacts = contactRepository.fetch('SELECT Id FROM Contact LIMIT 10');
 
         accountRepository.save();
         contactRepository.save(false);
@@ -104,11 +104,11 @@ public with sharing class DBRepositoryTest {
 
         for (Integer i = 0; i < 10; i++) {
             Account account = new Account();
-            accountRepository.add(account);
+            accountRepository.create(account);
 
-            contactRepository.add(new Contact());
+            contactRepository.create(new Contact());
 
-            contactRepository.del(new Contact(
+            contactRepository.remove(new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType)
             ));
         }
@@ -138,14 +138,14 @@ public with sharing class DBRepositoryTest {
         for (Integer i = 0; i < 10; i++) {
             Account account = new Account(
                 Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.put(account);
+            accountRepository.modify(account);
 
-            contactRepository.put(new Contact(
+            contactRepository.modify(new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType),
                 Account = account
             ));
 
-            contactRepository.del(new Contact(
+            contactRepository.remove(new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType)
             ));
         }
@@ -176,15 +176,15 @@ public with sharing class DBRepositoryTest {
         for (Integer i = 0; i < 10; i++) {
             Account account = new Account(
                 Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.put(account);
-            accountRepository.put(new Account(Id = account.Id, Name = 'Account Name'));
+            accountRepository.modify(account);
+            accountRepository.modify(new Account(Id = account.Id, Name = 'Account Name'));
 
             Contact contact = new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType),
                 Account = account
             );
-            contactRepository.put(contact);
-            contactRepository.put(new Contact(Id = contact.Id, LastName = 'Last Name'));
+            contactRepository.modify(contact);
+            contactRepository.modify(new Contact(Id = contact.Id, LastName = 'Last Name'));
         }
         accountRepository.save(false);
         contactRepository.save(false);
@@ -208,8 +208,8 @@ public with sharing class DBRepositoryTest {
         for (Integer i = 0; i < 10; i++) {
             Account acc = new Account(
                 Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.put(acc, new List<Schema.SObjectField>());
-            accountRepository.put(
+            accountRepository.modify(acc, new List<Schema.SObjectField>());
+            accountRepository.modify(
                 new Account(Id = acc.Id, Name = 'Account Name'),
                 new List<Schema.SObjectField> { Account.Name });
 
@@ -217,8 +217,8 @@ public with sharing class DBRepositoryTest {
                 Id = DBContextMock.getFakeId(Contact.SObjectType),
                 Account = acc
             );
-            contactRepository.put(con, new List<Schema.SObjectField>());
-            contactRepository.put(
+            contactRepository.modify(con, new List<Schema.SObjectField>());
+            contactRepository.modify(
                 new Contact(Id = con.Id, LastName = 'Last Name'),
                 new List<Schema.SObjectField> { Contact.LastName });
         }
@@ -238,7 +238,7 @@ public with sharing class DBRepositoryTest {
         IDBContext dbcontext = new DBContextMock();
         IDBRepository accountRepository = new DBRepository().config(dbcontext);
 
-        accountRepository.put(new Account(Id = DBContextMock.getFakeId(Account.SObjectType)), null);
+        accountRepository.modify(new Account(Id = DBContextMock.getFakeId(Account.SObjectType)), null);
 
         accountRepository.save(false);
         IDBResult result = dbcontext.commitObjects();
@@ -257,10 +257,10 @@ public with sharing class DBRepositoryTest {
 
         for (Integer i = 0; i < 10; i++) {
             Account account = new Account(Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.del(account);
+            accountRepository.remove(account);
 
             Contact contact = new Contact(Id = DBContextMock.getFakeId(Contact.SObjectType));
-            contactRepository.del(contact);
+            contactRepository.remove(contact);
         }
         accountRepository.save(false);
         contactRepository.save(false);
@@ -297,7 +297,7 @@ public with sharing class DBRepositoryTest {
         for (Contact con : contacts) {
             con.FirstName = 'First Name';
             con.LastName = 'Last Name';
-            contactRepository.put(con, new List<Schema.SObjectField> {
+            contactRepository.modify(con, new List<Schema.SObjectField> {
                 Contact.FirstName,
                 Contact.LastName
             });
@@ -306,9 +306,9 @@ public with sharing class DBRepositoryTest {
                 BillingCity = 'Dalian',
                 BillingCountry = 'China'
             );
-            accountRepository.add(acc);
+            accountRepository.create(acc);
 
-            contactRepository.put(new Contact(
+            contactRepository.modify(new Contact(
                     Id = con.Id,            // new contact will be merged into the repo
                     Account = acc           // new account without an Id yet
                 ), new List<Schema.SObjectField> {
