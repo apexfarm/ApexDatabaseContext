@@ -32,27 +32,25 @@
 
 public virtual class DBContext implements IDBContext {
     static Map<Schema.SObjectType, List<Schema.SObjectField>> relationshipFieldCache { get; set; }
-    static Map<Schema.SObjectType, List<String>> relationshipNameCache { get; set; }
+    static SavePoints savePoints { get; set; }
 
     static {
         relationshipFieldCache = new Map<Schema.SObjectType, List<Schema.SObjectField>>();
-        relationshipNameCache = new Map<Schema.SObjectType, List<String>>();
+        savePoints = new SavePoints();
     }
 
     static void setRelationshipFields(Schema.SObjectType objectType) {
         if (!relationshipFieldCache.containsKey(objectType)) {
             List<Schema.SObjectField> relationshipFields = new List<Schema.SObjectField>();
-            List<String> relationshipNames = new List<String>();
 
             for (Schema.SObjectField field : objectType.getDescribe().fields.getMap().values()) {
+                Schema.DescribeFieldResult dfr = field.getDescribe();
                 String relationshipName = field.getDescribe().getRelationshipName();
-                if (relationshipName != null) {
+                if (relationshipName != null && (dfr.isCreateable() || dfr.isUpdateable())) {
                     relationshipFields.add(field);
-                    relationshipNames.add(relationshipName);
                 }
             }
             relationshipFieldCache.put(objectType, relationshipFields);
-            relationshipNameCache.put(objectType, relationshipNames);
         }
     }
 
@@ -159,13 +157,13 @@ public virtual class DBContext implements IDBContext {
     }
 
     public virtual IDBResult commitObjects() {
-        System.Savepoint sp = Database.setSavePoint();
-        DBResult result = new DBResult();
+        Savepoint sp = savePoints.addSavePoint();
+        DBResult result = new DBResult(savePoints, sp);
 		try {
             commitContext(this, result);
 		} catch (Exception ex) {
-			Database.rollback(sp);
-			throw ex;
+			savePoints.rollback(sp);
+			throw new DBException(savePoints, ex);
 		}
         return result;
     }
@@ -318,15 +316,12 @@ public virtual class DBContext implements IDBContext {
         public List<Id> objectIds { get; set; }
 
         List<Schema.SObjectField> relationshipFields { get; set; }
-        List<String> relationshipNames { get; set; }
-
 
         DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType) {
             this.dmlOperation = dmlOperation;
             this.objectType = objectType;
             setRelationshipFields(this.objectType);
             this.relationshipFields = relationshipFieldCache.get(this.objectType);
-            this.relationshipNames = relationshipNameCache.get(this.objectType);
         }
 
         DMLDescriptor(DMLOperation dmlOperation, SObjectType objectType, List<SObject> objects, Boolean allOrNone) {
@@ -364,22 +359,57 @@ public virtual class DBContext implements IDBContext {
         }
 
         public virtual void assignParentIds() {
-            for (Integer i = 0; i < this.relationshipFields.size(); ++i) {
-                Schema.SObjectField parentIdField = this.relationshipFields[i];
-                String relationshipName = this.relationshipNames[i];
-
+            for (Schema.SObjectField parentIdField : this.relationshipFields) {
                 for (SObject obj : this.objects) {
-                    if (obj.getSObject(relationshipName) != null &&
-                        (obj.get(parentIdField) == null || obj.get(parentIdField) != obj.getSObject(relationshipName).Id)
-                    ) {
-                        obj.put(parentIdField, obj.getSObject(relationshipName).Id);
+                    try {
+                        SObject parentObj = obj.getSObject(parentIdField);
+                        if (parentObj != null) {
+                            if (obj.get(parentIdField) == null) {
+                                obj.put(parentIdField, parentObj.Id);
+                            }
+                        }
+                    } catch (SObjectException ex) {
+
                     }
                 }
             }
         }
     }
 
+    public class SavePoints {
+        List<SavePoint> sps { get; set; }
+
+        SavePoints() {
+            this.sps = new List<SavePoint>();
+        }
+
+        SavePoint addSavePoint() {
+            SavePoint sp = Database.setSavePoint();
+            this.sps.add(sp);
+            return sp;
+        }
+
+        public void rollback() {
+            if (!this.sps.isEmpty()) {
+                Database.rollback(this.sps[0]);
+                this.sps.clear();
+            }
+        }
+
+        public void rollback(SavePoint sp) {
+            Integer index = this.sps.indexOf(sp);
+            if (index != -1) {
+                Database.rollback(sp);
+                for (Integer len = this.sps.size(); len > index; --len) {
+                    this.sps.remove(len -1);
+                }
+            }
+        }
+    }
+
     public class DBResult implements IDBResult {
+        Savepoints savePoints { get; set; }
+        Savepoint sp { get; set; }
         public Map<Schema.SObjectType, List<Database.SaveResult>> insertResults { get; set; }
         public Map<Schema.SObjectType, List<Database.SaveResult>> updateResults { get; set; }
         public Map<Schema.SObjectType, List<Database.UpsertResult>> upsertResults { get; set; }
@@ -396,7 +426,16 @@ public virtual class DBContext implements IDBContext {
             emptyRecycleBinResults = new Map<Schema.SObjectType, List<Database.EmptyRecycleBinResult>>();
         }
 
-        public List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType) {
+        DBResult(SavePoints savePoints, SavePoint sp) {
+            this.savePoints = savePoints;
+            this.sp = sp;
+        }
+
+        public void rollback() {
+            this.savePoints.rollback(this.sp);
+        }
+
+        public List<DMLResult> getInsertErrors(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.insertResults.containsKey(objectType)) {
@@ -409,7 +448,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpdateErrors(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.updateResults.containsKey(objectType)) {
@@ -422,7 +461,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpsertErrors(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.upsertResults.containsKey(objectType)) {
@@ -435,7 +474,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getErrorsForDelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getDeleteErrors(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.deleteResults.containsKey(objectType)) {
@@ -448,7 +487,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getErrorsForUndelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getUndeleteErrors(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.undeleteResults.containsKey(objectType)) {
@@ -461,7 +500,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType) {
+        public List<DMLResult> getEmptyRecycleBinErrors(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.emptyRecycleBinResults.containsKey(objectType)) {
@@ -474,7 +513,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getResultsForInsert(Schema.SObjectType objectType) {
+        public List<DMLResult> getInsertResults(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.insertResults.containsKey(objectType)) {
@@ -485,7 +524,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getResultsForUpdate(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpdateResults(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.updateResults.containsKey(objectType)) {
@@ -496,7 +535,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getResultsForUpsert(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpsertResults(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.upsertResults.containsKey(objectType)) {
@@ -507,7 +546,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getResultsForDelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getDeleteResults(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.deleteResults.containsKey(objectType)) {
@@ -518,7 +557,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getResultsForUndelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getUndeleteResults(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.undeleteResults.containsKey(objectType)) {
@@ -529,7 +568,7 @@ public virtual class DBContext implements IDBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) {
+        public List<DMLResult> getEmptyRecycleBinResults(Schema.SObjectType objectType) {
             List<DMLResult> dmlResults = new List<DMLResult>();
 
             if (this.emptyRecycleBinResults.containsKey(objectType)) {

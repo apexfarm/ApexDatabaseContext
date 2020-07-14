@@ -31,10 +31,26 @@
  */
 
 public with sharing class DMLResult {
-    public List<Database.Error> errors { get; private set; }
-    public Id id { get; private set; }
-    public Boolean isSuccess { get; private set; }
-    public Boolean isCreated { get; private set; }
+    List<Database.Error> errors;
+    Id id;
+    Boolean isSuccess;
+    Boolean isCreated;
+
+    public Id getId() {
+        return id;
+    }
+
+    public Boolean isSuccess() {
+        return isSuccess;
+    }
+
+    public Boolean isCreated() {
+        return isCreated;
+    }
+
+    public List<Database.Error> getErrors() {
+        return errors;
+    }
 
     public DMLResult(Id id, Boolean isSuccess, Boolean isCreated) {
         this.id = id;

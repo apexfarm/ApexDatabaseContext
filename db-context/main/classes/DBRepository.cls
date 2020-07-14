@@ -54,56 +54,76 @@ public virtual class DBRepository implements IDBRepository {
         return this;
     }
 
-    public virtual List<SObject> get(String query) {
+    public virtual List<SObject> fetch(String query) {
         if (String.isNotBlank(query)) {
             return Database.query(String.escapeSingleQuotes(query));
         }
         return new List<SObject>();
     }
 
-    public virtual void add(SObject obj) {
-        this.insertedObjects.add(obj);
+    public virtual SObject create(SObject obj) {
+        if (obj != null) {
+            this.insertedObjects.add(obj);
+        }
+        return obj;
     }
 
-    public virtual void put(SObject obj) {
-        if (!this.updatedObjects.containsKey(obj.Id)) {
-            this.updatedObjects.put(obj.Id, obj);
-            return;
-        }
-
-        SObject updatedObject = this.updatedObjects.get(obj.Id);
-        if (updatedObject != obj) {
-            for (Schema.SObjectField field : obj.getSObjectType().getDescribe().fields.getMap().values()) {
-                if (obj.isSet(field)) {
-                    updatedObject.put(field, obj.get(field));
-                }
-            }
-        }
-    }
-
-    public virtual void put(SObject obj, List<Schema.SObjectField> fields) {
-        if (!this.updatedObjects.containsKey(obj.Id)) {
-            this.updatedObjects.put(obj.Id, obj);
-            return;
-        }
-
-        SObject cachedObj = this.updatedObjects.get(obj.Id);
-        if (cachedObj != obj) {
-            for (Schema.SObjectField field : fields) {
-                if (obj.isSet(field)) {
-                    cachedObj.put(field, obj.get(field));
-                } else {
-                    String relationshipName = field.getDescribe().getRelationshipName();
-                    if (relationshipName != null) {
-                        cachedObj.putSObject(relationshipName, obj.getSObject(relationshipName));
+    public virtual SObject modify(SObject obj) {
+        if (obj != null && obj.Id != null) {
+            if (!this.updatedObjects.containsKey(obj.Id)) {
+                this.updatedObjects.put(obj.Id, obj);
+            } else {
+                SObject cacheObj = this.updatedObjects.get(obj.Id);
+                if (cacheObj != obj) {
+                    for (Schema.SObjectField field : obj.getSObjectType().getDescribe().fields.getMap().values()) {
+                        if (obj.isSet(field)) {
+                            cacheObj.put(field, obj.get(field));
+                        }
                     }
+                    obj = cacheObj;
                 }
             }
         }
+        return obj;
     }
 
-    public virtual void del(SObject obj) {
-        this.deletedObjectIds.add(obj.Id);
+    public virtual SObject modify(SObject obj, List<Schema.SObjectField> fields) {
+        if (fields == null) {
+            return this.modify(obj);
+        }
+
+        if (obj != null && obj.Id != null) {
+            if (!this.updatedObjects.containsKey(obj.Id)) {
+                this.updatedObjects.put(obj.Id, obj);
+            } else {
+                SObject cachedObj = this.updatedObjects.get(obj.Id);
+                if (cachedObj != obj) {
+                    for (Schema.SObjectField field : fields) {
+                        if (obj.isSet(field)) {
+                            cachedObj.put(field, obj.get(field));
+                        } else {
+                            String relationshipName = field.getDescribe().getRelationshipName();
+                            if (relationshipName != null) {
+                                cachedObj.putSObject(relationshipName, obj.getSObject(relationshipName));
+                            }
+                        }
+                    }
+                    obj = cachedObj;
+                }
+            }
+        }
+        return obj;
+    }
+
+    public virtual void relate(SObject obj, Schema.SObjectField to, SObject parent) {
+        obj.put(to, parent.Id);
+        obj.putSObject(to, parent);
+    }
+
+    public virtual void remove(SObject obj) {
+        if (obj != null) {
+            this.deletedObjectIds.add(obj.Id);
+        }
     }
 
     public virtual void save() {

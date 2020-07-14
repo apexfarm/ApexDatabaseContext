@@ -34,7 +34,7 @@
 public with sharing class DBRepositoryTest {
     @IsTest
     static void test_empty_repo() {
-        IDBContext dbcontext = new DBContext();
+        IDBContext dbcontext = new DBContextMock();
         IDBRepository accountRepository = new DBRepository()
             .config(dbcontext).config(Account.SObjectType);
         IDBRepository contactRepository = new DBRepository()
@@ -43,11 +43,37 @@ public with sharing class DBRepositoryTest {
         accountRepository.save();
         contactRepository.save(false);
 
-        dbcontext.commitObjects();
+        IDBResult dbresult = dbcontext.commitObjects();
+        dbresult.rollback();
     }
 
     @IsTest
-    static void test_get_query() {
+    static void test_null_objects() {
+        IDBContext dbcontext = new DBContextMock();
+        IDBRepository accountRepository = new DBRepository().config(dbcontext);
+
+        accountRepository.create(null);
+        accountRepository.modify(null);
+        accountRepository.modify(null, null);
+        accountRepository.modify(new Account(), null);
+        accountRepository.remove(null);
+
+        accountRepository.save(false);
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteResults(Contact.SObjectType).size());
+        System.assertEquals(0, result.getUpsertResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getUndeleteResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getEmptyRecycleBinResults(Contact.SObjectType).size());
+    }
+
+    @IsTest
+    static void test_fetch_query() {
         IDBContext dbcontext = new DBContext();
         IDBRepository accountRepository = new DBRepository()
             .config(dbcontext).config(Account.SObjectType);
@@ -55,12 +81,12 @@ public with sharing class DBRepositoryTest {
             .config(dbcontext).config(Contact.SObjectType);
 
         List<SObject> accounts;
-        accounts = accountRepository.get(null);
-        accounts = accountRepository.get('SELECT Id FROM Account LIMIT 10');
+        accounts = accountRepository.fetch(null);
+        accounts = accountRepository.fetch('SELECT Id FROM Account LIMIT 10');
 
         List<SObject> contacts;
-        contacts = contactRepository.get(null);
-        contacts = contactRepository.get('SELECT Id FROM Contact LIMIT 10');
+        contacts = contactRepository.fetch(null);
+        contacts = contactRepository.fetch('SELECT Id FROM Contact LIMIT 10');
 
         accountRepository.save();
         contactRepository.save(false);
@@ -77,12 +103,11 @@ public with sharing class DBRepositoryTest {
             .config(dbcontext).config(Contact.SObjectType);
 
         for (Integer i = 0; i < 10; i++) {
-            Account account = new Account();
-            accountRepository.add(account);
+            accountRepository.create(new Account());
 
-            contactRepository.add(new Contact());
+            contactRepository.create(new Contact());
 
-            contactRepository.del(new Contact(
+            contactRepository.remove(new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType)
             ));
         }
@@ -93,33 +118,33 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(10, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(10, result.getErrorsForInsert(Contact.SObjectType).size());
-        System.assertEquals(10, result.getErrorsForDelete(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForInsert(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(10, result.getInsertErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
     }
 
     @IsTest
-    static void test_update() {
+    static void test_insert_relate() {
         IDBContext dbcontext = new DBContextMock();
         IDBRepository accountRepository = new DBRepository()
             .config(dbcontext).config(Account.SObjectType);
         IDBRepository contactRepository = new DBRepository()
             .config(dbcontext).config(Contact.SObjectType);
 
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
         for (Integer i = 0; i < 10; i++) {
-            Account account = new Account(
-                Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.put(account);
+            Account acc = (Account)accountRepository.create(new Account());
+            accounts.add(acc);
 
-            contactRepository.put(new Contact(
-                Id = DBContextMock.getFakeId(Contact.SObjectType),
-                Account = account
-            ));
+            Contact con = (Contact)contactRepository.create(new Contact());
+            contactRepository.relate(con, Contact.AccountId, acc);
+            contacts.add(con);
 
-            contactRepository.del(new Contact(
+            contactRepository.remove(new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType)
             ));
         }
@@ -131,12 +156,107 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
+
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
+        }
+    }
+
+    @IsTest
+    static void test_update() {
+        IDBContext dbcontext = new DBContextMock();
+        IDBRepository accountRepository = new DBRepository()
+            .config(dbcontext).config(Account.SObjectType);
+        IDBRepository contactRepository = new DBRepository()
+            .config(dbcontext).config(Contact.SObjectType);
+
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
+        for (Integer i = 0; i < 10; i++) {
+            Account acc = (Account)accountRepository.modify(new Account(
+                Id = DBContextMock.getFakeId(Account.SObjectType))
+            );
+            accounts.add(acc);
+
+            Contact con = (Contact)contactRepository.modify(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType),
+                Account = acc
+            ));
+            contacts.add(con);
+
+            contactRepository.remove(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            ));
+        }
+
+        accountRepository.save(false);
+        Database.DMLOptions dmlOptions = new Database.DMLOptions();
+        dmlOptions.optAllOrNone = false;
+        contactRepository.save(dmlOptions);
+
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
+        }
+    }
+
+    @IsTest
+    static void test_update_relate() {
+        IDBContext dbcontext = new DBContextMock();
+        IDBRepository accountRepository = new DBRepository()
+            .config(dbcontext).config(Account.SObjectType);
+        IDBRepository contactRepository = new DBRepository()
+            .config(dbcontext).config(Contact.SObjectType);
+
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
+        for (Integer i = 0; i < 10; i++) {
+            Account acc = (Account)accountRepository.modify(new Account(
+                Id = DBContextMock.getFakeId(Account.SObjectType)
+            ));
+            accounts.add(acc);
+
+            Contact con = (Contact)contactRepository.modify(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            ));
+            contactRepository.relate(con, Contact.AccountId, acc);
+            contacts.add(con);
+
+            contactRepository.remove(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            ));
+        }
+
+        accountRepository.save(false);
+        Database.DMLOptions dmlOptions = new Database.DMLOptions();
+        dmlOptions.optAllOrNone = false;
+        contactRepository.save(dmlOptions);
+
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
+
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
+        }
     }
 
     @IsTest
@@ -147,28 +267,38 @@ public with sharing class DBRepositoryTest {
         IDBRepository contactRepository = new DBRepository()
             .config(dbcontext).config(Contact.SObjectType);
 
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
         for (Integer i = 0; i < 10; i++) {
-            Account account = new Account(
-                Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.put(account);
-            accountRepository.put(new Account(Id = account.Id, Name = 'Account Name'));
+            Id accountId = DBContextMock.getFakeId(Account.SObjectType);
+            accountRepository.modify(new Account(
+                Id = accountId));
+            Account acc = (Account)accountRepository.modify(new Account(
+                Id = accountId, Name = 'Account Name'));
+            accounts.add(acc);
 
-            Contact contact = new Contact(
-                Id = DBContextMock.getFakeId(Contact.SObjectType),
-                Account = account
-            );
-            contactRepository.put(contact);
-            contactRepository.put(new Contact(Id = contact.Id, LastName = 'Last Name'));
+            Id contactId = DBContextMock.getFakeId(Contact.SObjectType);
+            contactRepository.modify(new Contact(
+                Id = contactId,
+                Account = acc
+            ));
+            Contact con = (Contact)contactRepository.modify(new Contact(
+                Id = contactId, LastName = 'Last Name'));
+            contacts.add(con);
         }
         accountRepository.save(false);
         contactRepository.save(false);
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
+
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
+        }
     }
 
     @IsTest
@@ -179,20 +309,25 @@ public with sharing class DBRepositoryTest {
         IDBRepository contactRepository = new DBRepository()
             .config(dbcontext).config(Contact.SObjectType);
 
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
         for (Integer i = 0; i < 10; i++) {
-            Account acc = new Account(
-                Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.put(acc, new List<Schema.SObjectField>());
-            accountRepository.put(
+            Account acc = (Account)accountRepository.modify(new Account(
+                Id = DBContextMock.getFakeId(Account.SObjectType)),
+                new List<Schema.SObjectField>());
+            accounts.add(acc);
+
+            accountRepository.modify(
                 new Account(Id = acc.Id, Name = 'Account Name'),
                 new List<Schema.SObjectField> { Account.Name });
 
-            Contact con = new Contact(
+            Contact con = (Contact)contactRepository.modify(new Contact(
                 Id = DBContextMock.getFakeId(Contact.SObjectType),
                 Account = acc
-            );
-            contactRepository.put(con, new List<Schema.SObjectField>());
-            contactRepository.put(
+            ), new List<Schema.SObjectField>());
+            contacts.add(con);
+
+            contactRepository.modify(
                 new Contact(Id = con.Id, LastName = 'Last Name'),
                 new List<Schema.SObjectField> { Contact.LastName });
         }
@@ -201,12 +336,29 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
+
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
+        }
     }
 
+    @IsTest
+    static void test_update_null_fields() {
+        IDBContext dbcontext = new DBContextMock();
+        IDBRepository accountRepository = new DBRepository().config(dbcontext);
+
+        accountRepository.modify(new Account(Id = DBContextMock.getFakeId(Account.SObjectType)), null);
+
+        accountRepository.save(false);
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateResults(Account.SObjectType).size());
+    }
 
     @IsTest
     static void test_delete() {
@@ -218,20 +370,20 @@ public with sharing class DBRepositoryTest {
 
         for (Integer i = 0; i < 10; i++) {
             Account account = new Account(Id = DBContextMock.getFakeId(Account.SObjectType));
-            accountRepository.del(account);
+            accountRepository.remove(account);
 
             Contact contact = new Contact(Id = DBContextMock.getFakeId(Contact.SObjectType));
-            contactRepository.del(contact);
+            contactRepository.remove(contact);
         }
         accountRepository.save(false);
         contactRepository.save(false);
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
     }
 
     @IsTest
@@ -254,22 +406,23 @@ public with sharing class DBRepositoryTest {
             new Contact(Id = DBContextMock.getFakeId(Contact.SObjectType)),
             new Contact(Id = DBContextMock.getFakeId(Contact.SObjectType))
         };
+        List<Account> accounts = new List<Account>();
 
         for (Contact con : contacts) {
             con.FirstName = 'First Name';
             con.LastName = 'Last Name';
-            contactRepository.put(con, new List<Schema.SObjectField> {
+            contactRepository.modify(con, new List<Schema.SObjectField> {
                 Contact.FirstName,
                 Contact.LastName
             });
 
-            Account acc = new Account(
+            Account acc = (Account)accountRepository.create(new Account(
                 BillingCity = 'Dalian',
                 BillingCountry = 'China'
-            );
-            accountRepository.add(acc);
+            ));
+            accounts.add(acc);
 
-            contactRepository.put(new Contact(
+            contactRepository.modify(new Contact(
                     Id = con.Id,            // new contact will be merged into the repo
                     Account = acc           // new account without an Id yet
                 ), new List<Schema.SObjectField> {
@@ -282,11 +435,11 @@ public with sharing class DBRepositoryTest {
         contactRepository.save(false);      // allOrNone = false
 
         IDBResult result = dbcontext.commitObjects();
-        System.assertEquals(10, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
 
-        for (Contact con : contacts) {
-            System.assertNotEquals(null, con.AccountId);
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
         }
     }
 }
