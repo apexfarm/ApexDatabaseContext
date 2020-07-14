@@ -33,17 +33,17 @@
 public interface IDBResult {
     void rollback();
 
-    List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType);
-    List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType);
-    List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType);
-    List<DMLResult> getErrorsForDelete(Schema.SObjectType objectType);
-    List<DMLResult> getErrorsForUndelete(Schema.SObjectType objectType);
-    List<DMLResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType);
+    List<DMLResult> getInsertErrors(Schema.SObjectType objectType);
+    List<DMLResult> getUpdateErrors(Schema.SObjectType objectType);
+    List<DMLResult> getUpsertErrors(Schema.SObjectType objectType);
+    List<DMLResult> getDeleteErrors(Schema.SObjectType objectType);
+    List<DMLResult> getUndeleteErrors(Schema.SObjectType objectType);
+    List<DMLResult> getEmptyRecycleBinErrors(Schema.SObjectType objectType);
 
-    List<DMLResult> getResultsForInsert(Schema.SObjectType objectType);
-    List<DMLResult> getResultsForUpdate(Schema.SObjectType objectType);
-    List<DMLResult> getResultsForUpsert(Schema.SObjectType objectType);
-    List<DMLResult> getResultsForDelete(Schema.SObjectType objectType);
-    List<DMLResult> getResultsForUndelete(Schema.SObjectType objectType);
-    List<DMLResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType);
+    List<DMLResult> getInsertResults(Schema.SObjectType objectType);
+    List<DMLResult> getUpdateResults(Schema.SObjectType objectType);
+    List<DMLResult> getUpsertResults(Schema.SObjectType objectType);
+    List<DMLResult> getDeleteResults(Schema.SObjectType objectType);
+    List<DMLResult> getUndeleteResults(Schema.SObjectType objectType);
+    List<DMLResult> getEmptyRecycleBinResults(Schema.SObjectType objectType);
 }

@@ -61,19 +61,19 @@ public with sharing class DBRepositoryTest {
         accountRepository.save(false);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Contact.SObjectType).size());
-        System.assertEquals(0, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForDelete(Contact.SObjectType).size());
-        System.assertEquals(0, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForEmptyRecycleBin(Contact.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteResults(Contact.SObjectType).size());
+        System.assertEquals(0, result.getUpsertResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getUndeleteResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getEmptyRecycleBinResults(Contact.SObjectType).size());
     }
 
     @IsTest
-    static void test_get_query() {
+    static void test_fetch_query() {
         IDBContext dbcontext = new DBContext();
         IDBRepository accountRepository = new DBRepository()
             .config(dbcontext).config(Account.SObjectType);
@@ -119,12 +119,56 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(10, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(10, result.getErrorsForInsert(Contact.SObjectType).size());
-        System.assertEquals(10, result.getErrorsForDelete(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForInsert(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(10, result.getInsertErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
+    }
+
+    @IsTest
+    static void test_insert_relate() {
+        IDBContext dbcontext = new DBContextMock();
+        IDBRepository accountRepository = new DBRepository()
+            .config(dbcontext).config(Account.SObjectType);
+        IDBRepository contactRepository = new DBRepository()
+            .config(dbcontext).config(Contact.SObjectType);
+
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
+        for (Integer i = 0; i < 10; i++) {
+            Account acc = new Account();
+            accountRepository.create(acc);
+            accounts.add(acc);
+
+            Contact con = new Contact();
+            contactRepository.relate(con, Contact.AccountId, acc);
+            contactRepository.create(con);
+            contacts.add(con);
+
+            contactRepository.remove(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            ));
+        }
+
+        accountRepository.save(false);
+        Database.DMLOptions dmlOptions = new Database.DMLOptions();
+        dmlOptions.optAllOrNone = false;
+        contactRepository.save(dmlOptions);
+
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
+
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
+        }
     }
 
     @IsTest
@@ -157,12 +201,60 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
+    }
+
+    @IsTest
+    static void test_update_relate() {
+        IDBContext dbcontext = new DBContextMock();
+        IDBRepository accountRepository = new DBRepository()
+            .config(dbcontext).config(Account.SObjectType);
+        IDBRepository contactRepository = new DBRepository()
+            .config(dbcontext).config(Contact.SObjectType);
+
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
+        for (Integer i = 0; i < 10; i++) {
+            Account acc = new Account(
+                Id = DBContextMock.getFakeId(Account.SObjectType)
+            );
+            accountRepository.modify(acc);
+            accounts.add(acc);
+
+            Contact con = new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            );
+            contactRepository.relate(con, Contact.AccountId, acc);
+            contactRepository.modify(con);
+            contacts.add(con);
+
+            contactRepository.remove(new Contact(
+                Id = DBContextMock.getFakeId(Contact.SObjectType)
+            ));
+        }
+
+        accountRepository.save(false);
+        Database.DMLOptions dmlOptions = new Database.DMLOptions();
+        dmlOptions.optAllOrNone = false;
+        contactRepository.save(dmlOptions);
+
+        IDBResult result = dbcontext.commitObjects();
+
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
+
+        for (Integer i = 0; i < 10; i++) {
+            System.assertEquals(accounts[i].Id, contacts[i].AccountId);
+        }
     }
 
     @IsTest
@@ -191,10 +283,10 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
     }
 
     @IsTest
@@ -227,10 +319,10 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
     }
 
     @IsTest
@@ -243,8 +335,8 @@ public with sharing class DBRepositoryTest {
         accountRepository.save(false);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateResults(Account.SObjectType).size());
     }
 
     @IsTest
@@ -267,10 +359,10 @@ public with sharing class DBRepositoryTest {
 
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Contact.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForDelete(Contact.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Contact.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getDeleteResults(Contact.SObjectType).size());
     }
 
     @IsTest
@@ -321,8 +413,8 @@ public with sharing class DBRepositoryTest {
         contactRepository.save(false);      // allOrNone = false
 
         IDBResult result = dbcontext.commitObjects();
-        System.assertEquals(10, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(10, result.getResultsForUpdate(Contact.SObjectType).size());
+        System.assertEquals(10, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(10, result.getUpdateResults(Contact.SObjectType).size());
 
         for (Contact con : contacts) {
             System.assertNotEquals(null, con.AccountId);

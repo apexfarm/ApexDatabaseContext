@@ -1,6 +1,6 @@
 # Apex Database Context
 
-![](https://img.shields.io/badge/version-1.4.1-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
+![](https://img.shields.io/badge/version-1.5-brightgreen.svg) ![](https://img.shields.io/badge/build-passing-brightgreen.svg) ![](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)
 
 Bring Unit of Work and Repository pattern into Apex world.
 
@@ -24,15 +24,15 @@ public without sharing class ContactService {
     public List<Contact> doBusiness(List<Contact> contacts) {
         for (Contact con : contacts) {
             con.FirstName = 'First Name';
-            this.contactRepository.put(con); // no need to provide field list on first update
+            this.contactRepository.modify(con); // no need to provide field list on first update
 
             Account acc = new Account(
                 BillingCity = 'Dalian',
                 BillingCountry = 'China'
             );
-            this.accountRepository.add(acc);
+            this.accountRepository.create(acc);
 
-            this.contactRepository.put(new Contact(
+            this.contactRepository.modify(new Contact(
                     Id = con.Id,             // new contact with same Id will be merged
                     Account = acc,           // new account without Id can also be used
                     LastName = 'Last Name'
@@ -47,7 +47,7 @@ public without sharing class ContactService {
         this.contactRepository.save(false);  // allOrNone = false
 
         IDBResult dbResult = dbcontext.commitObjects(); // commit to save to Salesforce
-        List<DMLResult> results = dbResult.getErrorsForInsert(Contact.SObjectType);
+        List<DMLResult> results = dbResult.getInsertErrors(Contact.SObjectType);
         return contacts;
     }
 }
@@ -122,11 +122,11 @@ More than a wrapper around IDBContext. It gives developer controls of the order 
 | Methods                                                      | Description                                                  |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | IDBRepository config(IDBContext *context*);                  |                                                              |
-| List\<SObject\> get(String *query*)                          |                                                              |
-| void add(SObject *obj*)                                      |                                                              |
-| void put(SObject *obj*)                                      | First time put don't need to specify the `fields` parameter. |
-| void put(SObject *obj*, List\<Schema.SObjectField\> *fields*) | Subsequent put should provide the `fields` parameter, for performance considerations. |
-| void del(SObject *obj*)                                      |                                                              |
+| List\<SObject\> fetch(String *query*)                        |                                                              |
+| void create(SObject *obj*)                                   |                                                              |
+| void modify(SObject *obj*)                                   | First time modify don't need to specify the `fields` parameter. |
+| void modify(SObject *obj*, List\<Schema.SObjectField\> *fields*) | Subsequent modify should provide the `fields` parameter, for performance considerations. |
+| void remove(SObject *obj*)                                   |                                                              |
 | void save()                                                  | Save to the in memory DBContext only, not perform actual DMLs to Salesforce. |
 | void save(Boolean *allOrNone*)                               |                                                              |
 | void save(Database.DMLOptions *options*)                     |                                                              |
@@ -164,22 +164,22 @@ Use the following methods to get all results of a particular operation against a
 
 | Methods                                                      |
 | ------------------------------------------------------------ |
-| List\<DMLResult\> getResultsForInsert(Schema.SObjectType objectType) |
-| List\<DMLResult\> getResultsForUpdate(Schema.SObjectType objectType) |
-| List\<DMLResult\> getResultsForUpsert(Schema.SObjectType objectType) |
-| List\<DMLResult\> getResultsForDelete(Schema.SObjectType objectType) |
-| List\<DMLResult\> getResultsForUndelete(Schema.SObjectType objectType) |
-| List\<DMLResult\> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) |
+| List\<DMLResult\> getInsertResults(Schema.SObjectType objectType) |
+| List\<DMLResult\> getUpdateResults(Schema.SObjectType objectType) |
+| List\<DMLResult\> getUpsertResults(Schema.SObjectType objectType) |
+| List\<DMLResult\> getDeleteResults(Schema.SObjectType objectType) |
+| List\<DMLResult\> getUndeleteResults(Schema.SObjectType objectType) |
+| List\<DMLResult\> getEmptyRecycleBinResults(Schema.SObjectType objectType) |
 
 Use the following methods to get only the error results of a particular operation against an SObjectType.
 | Methods                                                      |
 | ------------------------------------------------------------ |
-| List\<DMLResult\> getErrorsForInsert(Schema.SObjectType objectType) |
-| List\<DMLResult\> getErrorsForUpdate(Schema.SObjectType objectType) |
-| List\<DMLResult\> getErrorsForUpsert(Schema.SObjectType objectType) |
-| List\<DMLResult\> getErrorsForDelete(Schema.SObjectType objectType) |
-| List\<DMLResult\> getErrorsForUndelete(Schema.SObjectType objectType) |
-| List\<DMLResult\> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType) |
+| List\<DMLResult\> getInsertErrors(Schema.SObjectType objectType) |
+| List\<DMLResult\> getUpdateErrors(Schema.SObjectType objectType) |
+| List\<DMLResult\> getUpsertErrors(Schema.SObjectType objectType) |
+| List\<DMLResult\> getDeleteErrors(Schema.SObjectType objectType) |
+| List\<DMLResult\> getUndeleteErrors(Schema.SObjectType objectType) |
+| List\<DMLResult\> getEmptyRecycleBinErrors(Schema.SObjectType objectType) |
 
 ### DMLResult
 

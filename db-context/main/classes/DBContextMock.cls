@@ -162,31 +162,31 @@ public class DBContextMock extends DBContext {
             return dmlResults;
         }
 
-        public List<DMLResult> getErrorsForInsert(Schema.SObjectType objectType) {
+        public List<DMLResult> getInsertErrors(Schema.SObjectType objectType) {
             return new List<DMLResult>();
         }
 
-        public List<DMLResult> getErrorsForUpdate(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpdateErrors(Schema.SObjectType objectType) {
             return new List<DMLResult>();
         }
 
-        public List<DMLResult> getErrorsForUpsert(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpsertErrors(Schema.SObjectType objectType) {
             return new List<DMLResult>();
         }
 
-        public List<DMLResult> getErrorsForDelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getDeleteErrors(Schema.SObjectType objectType) {
             return new List<DMLResult>();
         }
 
-        public List<DMLResult> getErrorsForUndelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getUndeleteErrors(Schema.SObjectType objectType) {
             return new List<DMLResult>();
         }
 
-        public List<DMLResult> getErrorsForEmptyRecycleBin(Schema.SObjectType objectType) {
+        public List<DMLResult> getEmptyRecycleBinErrors(Schema.SObjectType objectType) {
             return new List<DMLResult>();
         }
 
-        public List<DMLResult> getResultsForInsert(Schema.SObjectType objectType) {
+        public List<DMLResult> getInsertResults(Schema.SObjectType objectType) {
             List<DMLResult> results = this.insertResults.get(objectType);
             if (results == null) {
                 return new List<DMLResult>();
@@ -194,7 +194,7 @@ public class DBContextMock extends DBContext {
             return results;
         }
 
-        public List<DMLResult> getResultsForUpdate(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpdateResults(Schema.SObjectType objectType) {
             List<DMLResult> results = this.updateResults.get(objectType);
             if (results == null) {
                 return new List<DMLResult>();
@@ -202,7 +202,7 @@ public class DBContextMock extends DBContext {
             return results;
         }
 
-        public List<DMLResult> getResultsForUpsert(Schema.SObjectType objectType) {
+        public List<DMLResult> getUpsertResults(Schema.SObjectType objectType) {
             List<DMLResult> results = this.upsertResults.get(objectType);
             if (results == null) {
                 return new List<DMLResult>();
@@ -210,7 +210,7 @@ public class DBContextMock extends DBContext {
             return results;
         }
 
-        public List<DMLResult> getResultsForDelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getDeleteResults(Schema.SObjectType objectType) {
             List<DMLResult> results = this.deleteResults.get(objectType);
             if (results == null) {
                 return new List<DMLResult>();
@@ -218,7 +218,7 @@ public class DBContextMock extends DBContext {
             return results;
         }
 
-        public List<DMLResult> getResultsForUndelete(Schema.SObjectType objectType) {
+        public List<DMLResult> getUndeleteResults(Schema.SObjectType objectType) {
             List<DMLResult> results = this.undeleteResults.get(objectType);
             if (results == null) {
                 return new List<DMLResult>();
@@ -226,7 +226,7 @@ public class DBContextMock extends DBContext {
             return results;
         }
 
-        public List<DMLResult> getResultsForEmptyRecycleBin(Schema.SObjectType objectType) {
+        public List<DMLResult> getEmptyRecycleBinResults(Schema.SObjectType objectType) {
             List<DMLResult> results = this.emptyRecycleBinResults.get(objectType);
             if (results == null) {
                 return new List<DMLResult>();

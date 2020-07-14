@@ -61,6 +61,11 @@ public virtual class DBRepository implements IDBRepository {
         return new List<SObject>();
     }
 
+    public void relate(SObject obj, Schema.SObjectField to, SObject parent) {
+        obj.put(to, parent.Id);
+        obj.putSObject(to, parent);
+    }
+
     public virtual void create(SObject obj) {
         if (obj == null) {
             return;

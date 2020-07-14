@@ -37,19 +37,19 @@ public with sharing class DBContextTest {
         IDBContext dbcontext = new DBContext();
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(0, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpsertResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getUndeleteResults(Account.SObjectType).size());
+        System.assertEquals(0, result.getEmptyRecycleBinResults(Account.SObjectType).size());
 
-        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUndeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getEmptyRecycleBinErrors(Account.SObjectType).size());
     }
 
     @IsTest
@@ -90,25 +90,96 @@ public with sharing class DBContextTest {
         dbcontext.emptyRecycleBin(new List<Id> {}, true);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUndeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getEmptyRecycleBinErrors(Account.SObjectType).size());
     }
 
     @IsTest
-    static void test_AllOrNone_exception() {
+    static void test_partial_insert_dmlResult() {
         IDBContext dbcontext = new DBContext();
-        dbcontext.insertObjects(new List<Account> { new Account() });
+        Account acc = new Account();
+        dbcontext.insertObjects(new List<Account> { acc }, false);
+        IDBResult dbresult = dbcontext.commitObjects();
+        List<DMLResult> results = dbresult.getInsertResults(Account.SObjectType);
+
+        System.assertEquals(1, results.size());
+        DMLResult result = results[0];
+        System.assertEquals(false, result.isSuccess());
+        System.assertEquals(true, result.isCreated());
+        System.assertNotEquals(null, result.getErrors());
+        System.assertEquals(null, result.getId());
+        System.assertEquals(null, acc.Id);
+    }
+
+    @IsTest
+    static void test_partial_update_dmlResult() {
+        IDBContext dbcontext = new DBContext();
+        Account acc = new Account(
+            Id = DBContextMock.getFakeId(Account.SObjectType)
+        );
+        dbcontext.updateObjects(new List<Account> { acc }, false);
+        IDBResult dbresult = dbcontext.commitObjects();
+        List<DMLResult> results = dbresult.getUpdateResults(Account.SObjectType);
+
+        System.assertEquals(1, results.size());
+        DMLResult result = results[0];
+        System.assertEquals(false, result.isSuccess());
+        System.assertEquals(false, result.isCreated());
+        System.assertNotEquals(null, result.getErrors());
+        System.assertEquals(null, result.getId());
+    }
+
+    @IsTest
+    static void test_AllOrNone_exception_rollback() {
+        IDBContext dbcontext = new DBContext();
         Boolean hasException = false;
         try {
             dbcontext.commitObjects();
-        } catch(Exception ex) {
+            dbcontext.insertObjects(new List<Account> { new Account() });
+            dbcontext.commitObjects();
+        } catch(DBException ex) {
             hasException = true;
+            System.debug(ex.getMessage());
+            System.debug(ex.getStackTraceString());
+            System.debug(ex.getCause());
+            System.debug(ex.getLineNumber());
+            ex.rollback();
         }
         System.assertEquals(true, hasException);
+    }
+
+    @IsTest
+    static void test_partial_exception_rollback() {
+        IDBContext dbcontext = new DBContext();
+        Boolean hasException = false;
+        Boolean hasRollback = false;
+        try {
+            dbcontext.commitObjects();
+
+            dbcontext.insertObjects(new List<Account> { new Account() }, false);
+            IDBResult dbresult1 = dbcontext.commitObjects();
+
+            dbcontext.insertObjects(new List<Account> { new Account() }, false);
+            IDBResult dbresult2 = dbcontext.commitObjects();
+
+            dbresult2.rollback();
+            dbresult1.rollback();
+            hasRollback = true;
+
+            dbcontext.insertObjects(new List<Account> { new Account() });
+            dbcontext.commitObjects();
+            hasRollback = false;
+        } catch(DBException ex) {
+            hasException = true;
+            ex.rollback();
+            ex.rollback();
+        }
+        System.assertEquals(true, hasException);
+        System.assertEquals(true, hasRollback);
     }
 
     @IsTest
@@ -125,12 +196,12 @@ public with sharing class DBContextTest {
         dbcontext.emptyRecycleBin(new List<Id> {}, false);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUndeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getEmptyRecycleBinErrors(Account.SObjectType).size());
     }
 
     @IsTest
@@ -148,19 +219,19 @@ public with sharing class DBContextTest {
         dbcontext.emptyRecycleBin(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(2, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(2, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(2, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(1, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpsertErrors(Account.SObjectType).size());
+        System.assertEquals(2, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(2, result.getUndeleteErrors(Account.SObjectType).size());
+        System.assertEquals(2, result.getEmptyRecycleBinErrors(Account.SObjectType).size());
 
-        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(2, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(2, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(2, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(1, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpsertResults(Account.SObjectType).size());
+        System.assertEquals(2, result.getDeleteResults(Account.SObjectType).size());
+        System.assertEquals(2, result.getUndeleteResults(Account.SObjectType).size());
+        System.assertEquals(2, result.getEmptyRecycleBinResults(Account.SObjectType).size());
     }
 
     @IsTest
@@ -171,11 +242,11 @@ public with sharing class DBContextTest {
         dbcontext.updateObjects(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, dmlOptions);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForUpdate(Account.SObjectType).size());
+        System.assertEquals(1, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateErrors(Account.SObjectType).size());
 
-        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
+        System.assertEquals(1, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateResults(Account.SObjectType).size());
     }
 
     @IsTest
@@ -192,19 +263,19 @@ public with sharing class DBContextTest {
         childContext1.emptyRecycleBin(new List<Account> { new Account(Id = DBContextMock.getFakeId(Account.SObjectType)) }, true);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(1, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(1, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpsertErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getUndeleteErrors(Account.SObjectType).size());
+        System.assertEquals(1, result.getEmptyRecycleBinErrors(Account.SObjectType).size());
 
-        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(1, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpsertResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getDeleteResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUndeleteResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getEmptyRecycleBinResults(Account.SObjectType).size());
     }
 
     @IsTest
@@ -307,19 +378,19 @@ public with sharing class DBContextTest {
         dbcontext.emptyRecycleBin(new List<Id> { DBContextMock.getFakeId(Account.SObjectType) }, false);
         IDBResult result = dbcontext.commitObjects();
 
-        System.assertEquals(0, result.getErrorsForInsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpdate(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUpsert(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForDelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForUndelete(Account.SObjectType).size());
-        System.assertEquals(0, result.getErrorsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(0, result.getInsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpdateErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUpsertErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getDeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getUndeleteErrors(Account.SObjectType).size());
+        System.assertEquals(0, result.getEmptyRecycleBinErrors(Account.SObjectType).size());
 
-        System.assertEquals(1, result.getResultsForInsert(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpdate(Account.SObjectType).size());
-        System.assertEquals(1, result.getResultsForUpsert(Account.SObjectType).size());
-        System.assertEquals(2, result.getResultsForDelete(Account.SObjectType).size());
-        System.assertEquals(2, result.getResultsForUndelete(Account.SObjectType).size());
-        System.assertEquals(2, result.getResultsForEmptyRecycleBin(Account.SObjectType).size());
+        System.assertEquals(1, result.getInsertResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpdateResults(Account.SObjectType).size());
+        System.assertEquals(1, result.getUpsertResults(Account.SObjectType).size());
+        System.assertEquals(2, result.getDeleteResults(Account.SObjectType).size());
+        System.assertEquals(2, result.getUndeleteResults(Account.SObjectType).size());
+        System.assertEquals(2, result.getEmptyRecycleBinResults(Account.SObjectType).size());
     }
 
     @IsTest

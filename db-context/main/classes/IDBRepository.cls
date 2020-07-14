@@ -39,6 +39,7 @@ public interface IDBRepository {
     void modify(SObject obj);
     void modify(SObject obj, List<Schema.SObjectField> fields);
     void remove(SObject obj);
+    void relate(SObject obj, Schema.SObjectField to, SObject parentObj);
     void save();
     void save(Boolean allOrNone);
     void save(Database.DMLOptions dmlOptions);
