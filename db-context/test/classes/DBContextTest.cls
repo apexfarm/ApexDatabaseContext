@@ -147,6 +147,14 @@ public with sharing class DBContextTest {
             System.debug(ex.getStackTraceString());
             System.debug(ex.getCause());
             System.debug(ex.getLineNumber());
+            System.debug(ex.getDmlFieldNames(0));
+            System.debug(ex.getDmlFields(0));
+            System.debug(ex.getDmlId(0));
+            System.debug(ex.getDmlIndex(0));
+            System.debug(ex.getDmlMessage(0));
+            System.debug(ex.getDmlStatusCode(0));
+            System.debug(ex.getDmlType(0));
+            System.debug(ex.getNumDml());
             ex.rollback();
         }
         System.assertEquals(true, hasException);

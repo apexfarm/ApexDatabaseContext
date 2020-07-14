@@ -359,16 +359,14 @@ public virtual class DBContext implements IDBContext {
         }
 
         public virtual void assignParentIds() {
-            for (Integer i = 0; i < this.relationshipFields.size(); ++i) {
-                Schema.SObjectField parentIdField = this.relationshipFields[i];
-
+            for (Schema.SObjectField parentIdField : this.relationshipFields) {
                 for (SObject obj : this.objects) {
                     try {
                         SObject parentObj = obj.getSObject(parentIdField);
-                        if (parentObj != null
-                            && (obj.get(parentIdField) == null
-                            || obj.get(parentIdField) != parentObj.Id)) {
-                            obj.put(parentIdField, parentObj.Id);
+                        if (parentObj != null) {
+                            if (obj.get(parentIdField) == null) {
+                                obj.put(parentIdField, parentObj.Id);
+                            }
                         }
                     } catch (SObjectException ex) {
 

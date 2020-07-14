@@ -4,13 +4,12 @@
 
 Bring Unit of Work and Repository pattern into Apex world.
 
-## Use DBRepository
+## Usage of DBRepository
 
-Use DBRepository to manage different sObjects context separatly.
+Use DBRepository to manage different sObjects context separatly. **Note**: It will be convinient to use this with [ApexDI](https://github.com/apexfarm/ApexDI), so DBContext can be registered as a singleton service.
 
 ```java
 public without sharing class ContactService {
-    // suggest to use a DI library to inject the following services
     IDBContext dbcontext { get; set; }
     IDBRepository accountRepository { get; set; }
     IDBRepository contactRepository { get; set; }
@@ -24,15 +23,14 @@ public without sharing class ContactService {
     public List<Contact> doBusiness(List<Contact> contacts) {
         for (Contact con : contacts) {
             con.FirstName = 'First Name';
-            this.contactRepository.modify(con); // no need to provide field list on first update
+            this.contactRepository.modify(con);
 
-            Account acc = new Account(
+            Account acc = (Account)this.accountRepository.create(new Account(
                 BillingCity = 'Dalian',
                 BillingCountry = 'China'
-            );
-            this.accountRepository.create(acc);
+            ));
 
-            this.contactRepository.modify(new Contact(
+            Contact con = (Contact)this.contactRepository.modify(new Contact(
                     Id = con.Id,             // new contact with same Id will be merged
                     Account = acc,           // new account without Id can also be used
                     LastName = 'Last Name'
@@ -53,7 +51,7 @@ public without sharing class ContactService {
 }
 ```
 
-## Use DBContext
+## Usage of DBContext
 
 ### Phantom Updates
 
@@ -64,11 +62,12 @@ IDBContext dbcontext = new DBContext();
 dbcontext.insertObjects(accounts);
 dbcontext.updateObjects(accounts); // update the accounts as long as they
                                    // were inserted in a previsou statement
+dbcontext.commitObjects();
 ```
 
 ### Child Contexts
 
-If some data have to be committed prior and can be committed standalone, please create a child IDBContext to perform the DMLs.
+If some records have to be committed prior and can be committed standalone, please create a child IDBContext to perform the DMLs.
 
 ```java
 IDBContext mainContext = new DBContext();
@@ -123,9 +122,10 @@ More than a wrapper around IDBContext. It gives developer controls of the order 
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | IDBRepository config(IDBContext *context*);                  |                                                              |
 | List\<SObject\> fetch(String *query*)                        |                                                              |
-| void create(SObject *obj*)                                   |                                                              |
-| void modify(SObject *obj*)                                   | First time modify don't need to specify the `fields` parameter. |
-| void modify(SObject *obj*, List\<Schema.SObjectField\> *fields*) | Subsequent modify should provide the `fields` parameter, for performance considerations. |
+| SObject create(SObject *obj*)                                |                                                              |
+| SObject modify(SObject *obj*)                                | First time modify don't need to specify the `fields` parameter. |
+| SObject modify(SObject *obj*, List\<Schema.SObjectField\> *fields*) | Subsequent modify should provide the `fields` parameter, for performance considerations. |
+| void relate(SObject *obj*, Schema.SObjectField *to*, SObject *parendObj*) | Explicitly register parent relationship. Used with `create` and `modify` APIs. |
 | void remove(SObject *obj*)                                   |                                                              |
 | void save()                                                  | Save to the in memory DBContext only, not perform actual DMLs to Salesforce. |
 | void save(Boolean *allOrNone*)                               |                                                              |
@@ -153,13 +153,17 @@ Please check Salesforce [Database Class](https://developer.salesforce.com/docs/a
 | void emptyRecycleBin(List\<SObject\> *objects*)              |
 | IDBResult commitObjects()                                    |
 
+The method  `commitObjects()` can raise a `DBException`, if any `DMLException` occur. The advantage to catch `DBException` is that it has a `rollback()` method to rollback all the DMLs performed by the DBContext.
+
 ### IDBResult
 
-| Methods          |
-| ---------------- |
-| void rollback(); |
+| Methods          | Description                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| void rollback(); | Rollback the DMLs performed by the current `commitObjects()`, but not other `commitObjects()` call. |
 
-Use the following methods to get all results of a particular operation against an SObjectType. **Note**: Results will only be available for dml operations with `allOrNone == false` or `dmlOptions != null & dmlOptions.optAllOrNone != true`.
+#### All Results
+
+**Note**: Results will only be available for dml operations with `allOrNone == false` or `dmlOptions != null & dmlOptions.optAllOrNone != true`.
 
 
 | Methods                                                      |
@@ -171,7 +175,10 @@ Use the following methods to get all results of a particular operation against a
 | List\<DMLResult\> getUndeleteResults(Schema.SObjectType objectType) |
 | List\<DMLResult\> getEmptyRecycleBinResults(Schema.SObjectType objectType) |
 
+#### Error Results
+
 Use the following methods to get only the error results of a particular operation against an SObjectType.
+
 | Methods                                                      |
 | ------------------------------------------------------------ |
 | List\<DMLResult\> getInsertErrors(Schema.SObjectType objectType) |
@@ -185,12 +192,12 @@ Use the following methods to get only the error results of a particular operatio
 
 DMLResult class is a field combination of Database.SaveResult, Database.UpsertResult, Database.DeleteResult, Database.UndeleteResult, and Database.EmptyRecycleBinResult.
 
-| Properties | Data Type              |
-| ---------- | ---------------------- |
-| errors     | List\<Database.Error\> |
-| id         | Id                     |
-| isSuccess  | Boolean                |
-| isCreated  | Boolean                |
+| Methods     | Data Type              |
+| ----------- | ---------------------- |
+| getErrors() | List\<Database.Error\> |
+| getId()     | Id                     |
+| isSuccess() | Boolean                |
+| isCreated() | Boolean                |
 
 ## License
 

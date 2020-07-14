@@ -35,11 +35,11 @@ public interface IDBRepository {
     IDBRepository config(IDBContext context);
 
     List<SObject> fetch(String query);
-    void create(SObject obj);
-    void modify(SObject obj);
-    void modify(SObject obj, List<Schema.SObjectField> fields);
-    void remove(SObject obj);
+    SObject create(SObject obj);
+    SObject modify(SObject obj);
+    SObject modify(SObject obj, List<Schema.SObjectField> fields);
     void relate(SObject obj, Schema.SObjectField to, SObject parentObj);
+    void remove(SObject obj);
     void save();
     void save(Boolean allOrNone);
     void save(Database.DMLOptions dmlOptions);
